@@ -1,51 +1,73 @@
 #include "linked_list.h"
+#include <_stdio.h>
 #include <stdio.h>
 
 int insertSortedLL(LinkedList *ll, int item)
 {
   // cases: NULL -> return -1
-  // insert into empty list 
+  // insert into empty list
   // insert when there are more than one items
-    
+    if (ll == NULL) return -1;
+    int idx = 0;
     ListNode *cur;
-    ListNode *prev;    
-    prev = ll->head;
     cur = ll->head;
-    if (ll == NULL)
-    {
-        return -1;
-    }
 
     // insert into empty list
     if (ll->head == NULL)
     {
-      ll->head = malloc(sizeof(ListNode));
-      ll->head->item = item;
-      ll->size = 1;
-      return 0;
+      return insertNode(ll,idx,item);
+    }
+
+    while (cur != NULL && cur->item < item) {
+        idx ++;
+        cur = cur->next;
+    }
+
+    if (cur != NULL && cur->item == item) return -1;
+
+    // insert at the end
+    int status = insertNode(ll, idx, item);
+    if (status == -1) return status;
+    printList(ll);
+    return idx;
+}
+
+// insert the second linkedlist from the first linkedlist 
+// 
+void alternateMergeLinkedList(LinkedList *ll1, LinkedList *ll2)
+{
+    
+    // 0 insert 1 insert 2 insert 3
+    //  
+    if (ll1 == NULL || ll2 == NULL){
+        return;
     }
     
-    // insert into the middle
-    while (cur != NULL){
-      if (item > cur->item){
-        printf("%d",cur->item);
-        prev = cur;
-        cur = cur->next;
-        break;  
-      }
-      else if(item == cur->item){
-        break;
-      cur = cur->next;
-      }
-    cur = cur->next;
-        
-    }  
-  // insert at the end 
-    
+    ListNode *first = ll1->head;
+    ListNode *second = ll2->head;
+
+    if (first == NULL || second == NULL){
+        return;
+    }
+    int idx = 1;
+    // approach:
+    while (first != NULL && second != NULL){
+      insertNode(ll1,idx,second->item);
+      first = first->next;
+      first = first ? first -> next : NULL;
+      second = second->next;
+      removeNode(ll2,0);
+      idx = idx + 2;
+  }
 
 
-return -1;
 }
+
+void moveOddItemsToBackLL(LinkedList *ll){
+
+
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -65,6 +87,25 @@ void printList(LinkedList *ll)
         cur = cur->next;
     }
     printf("\n");
+}
+
+int* returnList(LinkedList *ll, int size){
+    int *arr = malloc(size * sizeof(int));
+    int idx = 0;
+    ListNode *cur;
+    if (ll == NULL)
+        return NULL;
+    cur = ll->head;
+
+    if (cur == NULL)
+        return NULL;
+
+    while (cur != NULL)
+    {
+        arr[idx++] = cur->item;
+        cur = cur->next;
+    }
+    return arr;
 }
 
 void removeAllItems(LinkedList *ll)
@@ -176,4 +217,11 @@ int removeNode(LinkedList *ll, int index)
     }
 
     return -1;
+}
+
+
+int getItemAt(LinkedList *ll, int index)
+{
+    ListNode *node = findNode(ll, index);
+    return node ? node->item : -1;
 }

@@ -5,6 +5,7 @@
 // Unity setUp/tearDown
 LinkedList testList;
 
+
 void setUp(void)
 {
     // 각 테스트 전에 리스트 초기화
@@ -18,15 +19,11 @@ void tearDown(void)
     removeAllItems(&testList);
 }
 
-// 헬퍼 함수: 리스트의 특정 인덱스 값 확인
-int getItemAt(LinkedList *ll, int index)
-{
-    ListNode *node = findNode(ll, index);
-    return node ? node->item : -1;
-}
+
 
 // ==================== 테스트 케이스 ====================
 
+// Q1
 // 테스트 1: 빈 리스트에 첫 번째 아이템 삽입
 void test_insert_into_empty_list(void)
 {
@@ -157,80 +154,14 @@ void test_insert_negative_values(void)
     TEST_ASSERT_EQUAL(3, testList.size);
 }
 
-// ==================== 헬퍼 함수 구현 ====================
 
-// ListNode *findNode(LinkedList *ll, int index)
-// {
-//     ListNode *temp;
-//     if (ll == NULL || index < 0 || index >= ll->size)
-//         return NULL;
-//     temp = ll->head;
-//     if (temp == NULL || index < 0)
-//         return NULL;
-//     while (index > 0)
-//     {
-//         temp = temp->next;
-//         if (temp == NULL)
-//             return NULL;
-//         index--;
-//     }
-//     return temp;
-// }
 
-// int insertNode(LinkedList *ll, int index, int value)
-// {
-//     ListNode *pre, *cur;
-//     if (ll == NULL || index < 0 || index > ll->size + 1)
-//         return -1;
-//     if (ll->head == NULL || index == 0)
-//     {
-//         cur = ll->head;
-//         ll->head = malloc(sizeof(ListNode));
-//         ll->head->item = value;
-//         ll->head->next = cur;
-//         ll->size++;
-//         return 0;
-//     }
-//     if ((pre = findNode(ll, index - 1)) != NULL)
-//     {
-//         cur = pre->next;
-//         pre->next = malloc(sizeof(ListNode));
-//         pre->next->item = value;
-//         pre->next->next = cur;
-//         ll->size++;
-//         return 0;
-//     }
-//     return -1;
-// }
-
-// void removeAllItems(LinkedList *ll)
-// {
-//     ListNode *cur = ll->head;
-//     ListNode *tmp;
-//     while (cur != NULL)
-//     {
-//         tmp = cur->next;
-//         free(cur);
-//         cur = tmp;
-//     }
-//     ll->head = NULL;
-//     ll->size = 0;
-// }
-
-// // ==================== insertSortedLL 구현 (여기에 구현하세요) ====================
-
-// int insertSortedLL(LinkedList *ll, int item)
-// {
-//     // TODO: 여기에 코드를 작성하세요
-//     return -1;
-// }
-
-// ==================== Main 함수 ====================
 
 int main(void)
 {
     UNITY_BEGIN();
 
+    // ===== Q1
     RUN_TEST(test_insert_into_empty_list);
     RUN_TEST(test_insert_at_end);
     RUN_TEST(test_insert_in_middle);
@@ -241,6 +172,8 @@ int main(void)
     RUN_TEST(test_insert_reverse_order);
     RUN_TEST(test_null_pointer);
     RUN_TEST(test_insert_negative_values);
+    // ===== Q1
+
 
     return UNITY_END();
 }

@@ -1,20 +1,41 @@
 CC = gcc
 CFLAGS = -I. -I./tests -Wall -g
 
-# unity.c는 항상 포함
+# unity.c is always included
 UNITY = tests/unity.c
 
-# tests/ 폴더에서 "test"가 이름에 들어간 .c 파일 자동 검색
-TESTS = $(wildcard tests/*test*.c)
+# Separate test files
+TEST_A1 = tests/linked_list_a1_test.c
+TEST_A2 = tests/linked_list_a2_test.c
+TEST_A3 = tests/linked_list_a3_test.c
 
-# 실제 구현 파일들 (필요한 .c를 여기에 추가)
-SRCS = tests/linked_list.c 
 
-TARGET = test_runner
+# Implementation files
+SRCS = tests/linked_list.c
 
-test:
-	$(CC) $(CFLAGS) -o $(TARGET) $(UNITY) $(TESTS) $(SRCS)
-	./$(TARGET)
+# Separate targets
+TARGET_A1 = test_runner_a1
+TARGET_A2 = test_runner_a2
+TARGET_A3 = test_runner_a3
+
+# Test A1 only
+test_a1:
+	$(CC) $(CFLAGS) -o $(TARGET_A1) $(UNITY) $(TEST_A1) $(SRCS)
+	./$(TARGET_A1)
+
+# Test A2 only
+test_a2:
+	$(CC) $(CFLAGS) -o $(TARGET_A2) $(UNITY) $(TEST_A2) $(SRCS)
+	./$(TARGET_A2)
+
+test_a3:
+	$(CC) $(CFLAGS) -o $(TARGET_A3) $(UNITY) $(TEST_A3) $(SRCS)
+	./$(TARGET_A3)
+
+# Run all tests sequentially
+test: test_a1 test_a2 test_a3
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET_A1) $(TARGET_A2) $(TARGET_A3)
+
+.PHONY: test test_a1 test_a2  test_a3 clean
