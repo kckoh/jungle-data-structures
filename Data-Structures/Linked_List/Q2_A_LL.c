@@ -10,7 +10,7 @@ Purpose: Implementing the required functions for Question 2 */
 #include <stdlib.h>
 
 //////////////////////////////////////////////////////////////////////////////////
-
+/////hello world hello
 typedef struct _listnode
 {
 	int item;
@@ -41,7 +41,7 @@ int removeNode(LinkedList *ll, int index);
 int main()
 {
 	LinkedList ll1, ll2;
-	int c, i, j;
+int c, i, j;
 	c = 1;
 	//Initialize the linked list 1 as an empty linked list
 	ll1.head = NULL;
