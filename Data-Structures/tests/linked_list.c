@@ -102,6 +102,46 @@ void moveOddItemsToBackLL(LinkedList *ll) {
   }
 }
 
+void moveEvenItemsToBackLL(LinkedList *ll){
+    if (ll == NULL || ll->head == NULL || ll->head->next == NULL) {
+      return;
+    }
+    ListNode *cur = ll->head;
+    ListNode *tail = ll->head;
+    ListNode *prev = NULL;
+    // find the tail first
+    int count = 1;
+    while (tail->next != NULL) {
+      tail = tail->next;
+      count++;
+    }
+
+    while (count > 0) {
+      ListNode *next = cur->next;
+      // even
+      if (cur->item % 2 == 0) {
+        // head = even
+        if (prev == NULL) {
+          ll->head = next;
+        } else {
+          prev->next = next;
+        }
+
+        // tail에 추가
+        tail->next = cur;
+        cur->next = NULL;
+        tail = tail->next;
+        cur = next;
+      }
+      // ODD
+      else {
+        prev = cur;
+        cur = next;
+      }
+      count--;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 
 void printList(LinkedList *ll) {
