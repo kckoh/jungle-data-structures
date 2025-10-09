@@ -1,0 +1,8 @@
+# test runners
+test_runner_*
+
+# macOS debug symbol directories
+*.dSYM/
+
+# object files
+*.o

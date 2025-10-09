@@ -20,8 +20,7 @@ int insertSortedLL(LinkedList *ll, int item);
 void alternateMergeLinkedList(LinkedList *ll1, LinkedList *ll2);
 void moveOddItemsToBackLL(LinkedList *ll);
 void moveEvenItemsToBackLL(LinkedList *ll);
-void frontBackSplitLL(LinkedList *ll, LinkedList
-*resultFrontList, LinkedList *resultBackList);
+void frontBackSplitLL(LinkedList *ll, LinkedList *resultFrontList, LinkedList *resultBackList);
 int moveMaxToFront(ListNode **ptrHead);
 void recursiveReverse(ListNode **ptrHead);
 

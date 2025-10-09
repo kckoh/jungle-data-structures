@@ -102,45 +102,88 @@ void moveOddItemsToBackLL(LinkedList *ll) {
   }
 }
 
-void moveEvenItemsToBackLL(LinkedList *ll){
-    if (ll == NULL || ll->head == NULL || ll->head->next == NULL) {
-      return;
-    }
-    ListNode *cur = ll->head;
-    ListNode *tail = ll->head;
-    ListNode *prev = NULL;
-    // find the tail first
-    int count = 1;
-    while (tail->next != NULL) {
+void moveEvenItemsToBackLL(LinkedList *ll) {
+  // keep track of the index
+  // get the odd ListNodes and append it at the end
+  if (ll == NULL || ll->head == NULL || ll->head->next == NULL) {
+    return;
+  }
+  ListNode *cur = ll->head;
+  ListNode *tail = ll->head;
+  ListNode *prev = NULL;
+  // find the tail first
+  int count = 1;
+  while (tail->next != NULL) {
+    tail = tail->next;
+    count++;
+  }
+
+  while (count > 0) {
+    ListNode *next = cur->next;
+    // ODD
+    if (cur->item % 2 == 0) {
+      // head = ODD
+      if (prev == NULL) {
+        ll->head = next;
+      } else {
+        prev->next = next;
+      }
+
+      // tail에 추가
+      tail->next = cur;
+      cur->next = NULL;
       tail = tail->next;
-      count++;
+      cur = next;
     }
-
-    while (count > 0) {
-      ListNode *next = cur->next;
-      // even
-      if (cur->item % 2 == 0) {
-        // head = even
-        if (prev == NULL) {
-          ll->head = next;
-        } else {
-          prev->next = next;
-        }
-
-        // tail에 추가
-        tail->next = cur;
-        cur->next = NULL;
-        tail = tail->next;
-        cur = next;
-      }
-      // ODD
-      else {
-        prev = cur;
-        cur = next;
-      }
-      count--;
+    // EVEN
+    else {
+      prev = cur;
+      cur = next;
     }
+    count--;
+  }
 }
+
+void frontBackSplitLL(LinkedList *ll, LinkedList *resultFrontList, LinkedList *resultBackList){
+    // get the size
+    // even -> size//2
+    // odd -> size//2 + 1
+    // while
+
+    if (ll == NULL){
+        return;
+    }
+
+
+    ListNode *cur = ll->head;
+    ListNode *first = resultBackList->head;
+    ListNode *second = resultBackList->head;
+
+    int idx  = 0;
+    int front_idx = 0;
+    int back_idx = 0;
+    int half = (ll->size % 2 == 0) ? (ll->size / 2) : (ll->size / 2 + 1);
+
+    while (cur != NULL){
+        // add it to the front
+        if (idx < half){
+            insertNode(resultFrontList, front_idx, cur->item);
+            front_idx++;
+        }
+        // add it to the end
+        else{
+            insertNode(resultBackList, back_idx, cur->item);
+            back_idx++;
+        }
+        idx++;
+        cur = cur->next;
+    }
+    printList(resultFrontList);
+    printList(resultBackList);
+
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 

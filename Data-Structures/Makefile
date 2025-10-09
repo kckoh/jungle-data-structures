@@ -9,6 +9,7 @@ TEST_A1 = tests/linked_list_a1_test.c
 TEST_A2 = tests/linked_list_a2_test.c
 TEST_A3 = tests/linked_list_a3_test.c
 TEST_A4 = tests/linked_list_a4_test.c
+TEST_A5 = tests/linked_list_a5_test.c
 
 # Implementation files
 SRCS = tests/linked_list.c
@@ -18,6 +19,8 @@ TARGET_A1 = test_runner_a1
 TARGET_A2 = test_runner_a2
 TARGET_A3 = test_runner_a3
 TARGET_A4 = test_runner_a4
+TARGET_A5 = test_runner_a5
+
 
 # Test A1 only
 test_a1:
@@ -37,10 +40,14 @@ test_a4:
 	$(CC) $(CFLAGS) -o $(TARGET_A4) $(UNITY) $(TEST_A4) $(SRCS)
 	./$(TARGET_A4)
 
+test_a5:
+	$(CC) $(CFLAGS) -o $(TARGET_A5) $(UNITY) $(TEST_A5) $(SRCS)
+	./$(TARGET_A5)
+
 # Run all tests sequentially
-test: test_a1 test_a2 test_a3 test_a4
+test: test_a1 test_a2 test_a3 test_a4 test_a5
 
 clean:
-	rm -f $(TARGET_A1) $(TARGET_A2) $(TARGET_A3) $(TARGET_A4)
+	rm -f $(TARGET_A1) $(TARGET_A2) $(TARGET_A3) $(TARGET_A4) $(TARGET_A5)
 
-.PHONY: test test_a1 test_a2  test_a3 test_a4 clean
+.PHONY: test test_a1 test_a2 test_a3 test_a4 test_a5 clean
