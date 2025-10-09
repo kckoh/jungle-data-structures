@@ -156,8 +156,6 @@ void frontBackSplitLL(LinkedList *ll, LinkedList *resultFrontList, LinkedList *r
 
 
     ListNode *cur = ll->head;
-    ListNode *first = resultBackList->head;
-    ListNode *second = resultBackList->head;
 
     int idx  = 0;
     int front_idx = 0;
@@ -183,6 +181,9 @@ void frontBackSplitLL(LinkedList *ll, LinkedList *resultFrontList, LinkedList *r
 
 }
 
+int moveMaxToFront(ListNode **ptrHead){
+
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////
