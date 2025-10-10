@@ -144,47 +144,75 @@ void moveEvenItemsToBackLL(LinkedList *ll) {
   }
 }
 
-void frontBackSplitLL(LinkedList *ll, LinkedList *resultFrontList, LinkedList *resultBackList){
-    // get the size
-    // even -> size//2
-    // odd -> size//2 + 1
-    // while
+void frontBackSplitLL(LinkedList *ll, LinkedList *resultFrontList,
+                      LinkedList *resultBackList) {
+  // get the size
+  // even -> size//2
+  // odd -> size//2 + 1
+  // while
 
-    if (ll == NULL){
-        return;
+  if (ll == NULL) {
+    return;
+  }
+
+  ListNode *cur = ll->head;
+
+  int idx = 0;
+  int front_idx = 0;
+  int back_idx = 0;
+  int half = (ll->size % 2 == 0) ? (ll->size / 2) : (ll->size / 2 + 1);
+
+  while (cur != NULL) {
+    // add it to the front
+    if (idx < half) {
+      insertNode(resultFrontList, front_idx, cur->item);
+      front_idx++;
     }
-
-
-    ListNode *cur = ll->head;
-
-    int idx  = 0;
-    int front_idx = 0;
-    int back_idx = 0;
-    int half = (ll->size % 2 == 0) ? (ll->size / 2) : (ll->size / 2 + 1);
-
-    while (cur != NULL){
-        // add it to the front
-        if (idx < half){
-            insertNode(resultFrontList, front_idx, cur->item);
-            front_idx++;
-        }
-        // add it to the end
-        else{
-            insertNode(resultBackList, back_idx, cur->item);
-            back_idx++;
-        }
-        idx++;
-        cur = cur->next;
+    // add it to the end
+    else {
+      insertNode(resultBackList, back_idx, cur->item);
+      back_idx++;
     }
-    printList(resultFrontList);
-    printList(resultBackList);
-
+    idx++;
+    cur = cur->next;
+  }
+  printList(resultFrontList);
+  printList(resultBackList);
 }
 
-int moveMaxToFront(ListNode **ptrHead){
+// 1 hour
+int moveMaxToFront(ListNode **ptrHead) {
+  if (ptrHead == NULL || *ptrHead == NULL) {
+    return 0;
+  }
 
+  ListNode *cur = *ptrHead;
+  ListNode *prev = NULL;
+  int max = cur->item;
+  ListNode *maxNode = cur;
+  ListNode *maxPrev = NULL;
+
+  while (cur != NULL) {
+    if (cur->item > max) {
+      max = cur->item;
+      maxNode = cur;
+      maxPrev = prev;
+    }
+    prev = cur;
+    cur = cur->next;
+  }
+
+  // maxNode is at the beginning
+  if (maxPrev == NULL) {
+    return 1;
+  }
+  // maxNode is at the end
+  maxPrev->next = maxNode->next;
+  maxNode->next = *ptrHead;
+  *ptrHead = maxNode;
+
+  return 1;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////////
 
