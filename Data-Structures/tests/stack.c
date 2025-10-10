@@ -1,6 +1,7 @@
 #include "linked_list.h"
 #include <limits.h>
 #include "stack.h"
+#include "queue.h"
 #include <stdlib.h>   // for abs
 
 void createStackFromLinkedList(LinkedList *ll, Stack *s)
@@ -82,6 +83,23 @@ int isStackPairwiseConsecutive(Stack *s){
 
     printList(&s->ll);
     return 1;
+}
+
+// use stack, push, pop to implement reverse queue
+void reverse(Queue *q){
+    Stack s;              // 보조 스택
+    s.ll.head = NULL;
+    s.ll.size = 0;
+
+
+    while(isEmptyQueue(q) == 0){
+        push(&s, dequeue(q));
+    }
+
+    while(isEmptyStack(&s) == 0){
+        enqueue(q, pop(&s));
+    }
+    printList(&q->ll);
 }
 
 

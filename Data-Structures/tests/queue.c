@@ -68,3 +68,13 @@ void removeAllItemsFromQueue(Queue *q) {
   for (i = 0; i < count; i++)
     dequeue(q);
 }
+
+
+
+void recursiveReverseQueue(Queue *q){
+    int temp;
+    if(q->ll.head == NULL) return;
+    temp = dequeue(q);
+    recursiveReverseQueue(q);
+    enqueue(q,temp);
+}

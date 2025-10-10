@@ -1,4 +1,5 @@
 #include "linked_list.h"
+// #include "queue.h"
 #define MIN_INT -1000
 
 typedef struct _stack
@@ -10,6 +11,7 @@ typedef struct _stack
 void createStackFromLinkedList(LinkedList *ll , Stack *stack);
 void removeEvenValues(Stack *s);
 int isStackPairwiseConsecutive(Stack *s);
+
 
 void push(Stack *s , int item);
 int pop(Stack *s);

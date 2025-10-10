@@ -7,6 +7,8 @@ typedef struct _queue
 
 void createQueueFromLinkedList(LinkedList *ll, Queue *q);
 void removeOddValues(Queue *q);
+void reverse(Queue *q);
+void recursiveReverseQueue(Queue *q);
 
 void enqueue(Queue *q, int item);
 int dequeue(Queue *q);
