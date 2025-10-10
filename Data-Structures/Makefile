@@ -1,76 +1,67 @@
+# 컴파일러 및 플래그 설정
 CC = gcc
 CFLAGS = -I. -I./tests -Wall -g
 
-# unity.c is always included
+# 테스트 프레임워크 소스
 UNITY = tests/unity.c
 
-# Separate test files
-TEST_A1 = tests/linked_list_a1_test.c
-TEST_A2 = tests/linked_list_a2_test.c
-TEST_A3 = tests/linked_list_a3_test.c
-TEST_A4 = tests/linked_list_a4_test.c
-TEST_A5 = tests/linked_list_a5_test.c
-TEST_A6 = tests/linked_list_a6_test.c
-TEST_A7 = tests/linked_list_a7_test.c
-
-TEST_C1 = tests/stack_queue_c1_test.c
-
-# Implementation files
+# 공통 구현 파일
 SRCS_LINKED_LIST = tests/linked_list.c
 SRCS_QUEUE = tests/queue.c
+SRCS_STACK = tests/stack.c
+
+# 테스트 소스 파일들 자동 감지
+TEST_SOURCES_A := $(wildcard tests/linked_list_a*_test.c)
+TEST_SOURCES_C := $(wildcard tests/stack_queue_c*_test.c)
+
+# 모든 테스트 소스 파일 목록을 통합
+ALL_TEST_SOURCES := $(TEST_SOURCES_A) $(TEST_SOURCES_C)
+
+# 소스 파일 이름으로부터 타겟(실행 파일) 이름 생성
+TARGET_A_STEMS := $(patsubst tests/%_test.c,%,$(TEST_SOURCES_A))
+TARGET_C_STEMS := $(patsubst tests/%_test.c,%,$(TEST_SOURCES_C))
+
+TARGET_A_RUNNERS := $(addprefix test_runner_,$(TARGET_A_STEMS))
+TARGET_C_RUNNERS := $(addprefix test_runner_,$(TARGET_C_STEMS))
+
+# 모든 타겟 실행 파일
+ALL_TARGETS := $(TARGET_A_RUNNERS) $(TARGET_C_RUNNERS)
+.SECONDARY:
+#-----------------------------------------------------------------------------
+# 규칙 정의
+#-----------------------------------------------------------------------------
 
 
-# Separate targets
-# Linked List
-TARGET_A1 = test_runner_a1
-TARGET_A2 = test_runner_a2
-TARGET_A3 = test_runner_a3
-TARGET_A4 = test_runner_a4
-TARGET_A5 = test_runner_a5
-TARGET_A6 = test_runner_a6
-TARGET_A7 = test_runner_a7
 
-# Queue
-TARGET_C1 = test_runner_c1
+# 'test' 타겟: 모든 테스트를 순차적으로 실행
+.PHONY: test
+test: $(ALL_TARGETS)
+	@echo "--- Running all tests sequentially ---"
+	@for target in $(ALL_TARGETS); do \
+		echo "-> Running $$target..."; \
+		./$$target; \
+	done
+	@echo "--- All tests finished! ---"
 
-# Test A1 only
-test_a1:
-	$(CC) $(CFLAGS) -o $(TARGET_A1) $(UNITY) $(TEST_A1) $(SRCS_LINKED_LIST)
-	./$(TARGET_A1)
-
-# Test A2 only
-test_a2:
-	$(CC) $(CFLAGS) -o $(TARGET_A2) $(UNITY) $(TEST_A2) $(SRCS_LINKED_LIST)
-	./$(TARGET_A2)
-
-test_a3:
-	$(CC) $(CFLAGS) -o $(TARGET_A3) $(UNITY) $(TEST_A3) $(SRCS_LINKED_LIST)
-	./$(TARGET_A3)
-
-test_a4:
-	$(CC) $(CFLAGS) -o $(TARGET_A4) $(UNITY) $(TEST_A4) $(SRCS_LINKED_LIST)
-	./$(TARGET_A4)
-
-test_a5:
-	$(CC) $(CFLAGS) -o $(TARGET_A5) $(UNITY) $(TEST_A5) $(SRCS_LINKED_LIST)
-	./$(TARGET_A5)
-
-test_a6:
-	$(CC) $(CFLAGS) -o $(TARGET_A6) $(UNITY) $(TEST_A6) $(SRCS_LINKED_LIST)
-	./$(TARGET_A6)
-
-test_a7:
-	$(CC) $(CFLAGS) -o $(TARGET_A7) $(UNITY) $(TEST_A7) $(SRCS_LINKED_LIST)
-	./$(TARGET_A7)
-
-test_c1:
-	$(CC) $(CFLAGS) -o $(TARGET_C1) $(UNITY) $(TEST_C1) $(SRCS_LINKED_LIST) $(SRCS_QUEUE)
-	./$(TARGET_C1)
-
-# Run all tests sequentially
-test: test_a1 test_a2 test_a3 test_a4 test_a5 test_a6 test_a7 test_c1
-
+# 'clean' 타겟: 모든 테스트 실행 파일을 삭제
+.PHONY: clean
 clean:
-	rm -f $(TARGET_A1) $(TARGET_A2) $(TARGET_A3) $(TARGET_A4) $(TARGET_A5) $(TARGET_A6) $(TARGET_A7) $(TARGET_C1)
+	rm -f $(ALL_TARGETS)
 
-.PHONY: test test_a1 test_a2 test_a3 test_a4 test_a5 test_a6 test_a7 test_c1 clean
+
+
+
+# Queue 규칙을 '일반 규칙'보다 위에 둡니다.
+test_runner_stack_queue_%_test: tests/stack_queue_%_test.c $(UNITY) $(SRCS_LINKED_LIST) $(SRCS_QUEUE) $(SRCS_STACK)
+	$(CC) $(CFLAGS) -o $@ $^
+
+# ↓ 이 일반 규칙은 아래로 내려둠
+test_runner_%_test: tests/%_test.c $(UNITY) $(SRCS_LINKED_LIST)
+	$(CC) $(CFLAGS) -o $@ $^
+
+# 특정 테스트를 빌드하고 실행하는 PHONY 타겟
+# make run_linked_list_a1_test 명령으로 개별 테스트를 빌드하고 실행
+.PHONY: run_%_test
+run_%_test: test_runner_%_test
+	@echo "-> Running $<..."
+	@./$<
