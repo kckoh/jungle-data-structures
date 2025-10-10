@@ -1,6 +1,7 @@
 #include "linked_list.h"
 #include <limits.h>
 #include "stack.h"
+#include <stdlib.h>   // for abs
 
 void createStackFromLinkedList(LinkedList *ll, Stack *s)
 {
@@ -58,6 +59,31 @@ void removeEvenValues(Stack *s)
         }
 
 }
+
+int isStackPairwiseConsecutive(Stack *s){
+    if(s == NULL || s->ll.size%2 == 1) return 0;
+
+    Stack tmp;              // 보조 스택
+    tmp.ll.head = NULL;
+    tmp.ll.size = 0;
+
+    while(!isEmptyStack(s)){
+        int x = pop(s);
+        int y = pop(s);
+        if (abs(x-y) != 1){
+            return 0;
+        }
+        push(&tmp,x);
+        push(&tmp,y);
+    }
+    while (!isEmptyStack(&tmp)) {
+        push(s, pop(&tmp));
+    }
+
+    printList(&s->ll);
+    return 1;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////
 
