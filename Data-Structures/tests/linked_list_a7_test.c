@@ -1,116 +1,98 @@
 #include "unity.h"
+#include "linked_list.h"
 #include <stdlib.h>
-#include "linked_list.h"   // LinkedList, ListNode, insertNode, removeAllItems 등
-#include "unity_internals.h"
 
-// Test LinkedLists
-LinkedList testList;
-LinkedList frontList;
-LinkedList backList;
-
-void setUp(void) {
-    testList.head = NULL;
-    testList.size = 0;
-
-    frontList.head = NULL;
-    frontList.size = 0;
-
-    backList.head = NULL;
-    backList.size = 0;
-}
-
-void tearDown(void) {
-    removeAllItems(&testList);
-    removeAllItems(&frontList);
-    removeAllItems(&backList);
-}
-
-// Helper: Convert linked list to array for assertion
-void listToArray(LinkedList *ll, int *arr) {
-    ListNode *cur = ll->head;
-    int i = 0;
-    while(cur != NULL) {
-        arr[i++] = cur->item;
-        cur = cur->next;
+// Helper: create a list from array
+void createListFromArray(LinkedList *ll, int arr[], int size) {
+    ll->head = NULL;
+    ll->size = 0;
+    for (int i = 0; i < size; i++) {
+        insertNode(ll, i, arr[i]);
     }
 }
 
-void test_frontBackSplit_even_list(void) {
-    // Input: 2, 3, 5, 6
-    insertNode(&testList, 0, 2);
-    insertNode(&testList, 1, 3);
-    insertNode(&testList, 2, 5);
-    insertNode(&testList, 3, 6);
-
-    frontBackSplitLL(&testList, &frontList, &backList);
-
-    int expectedFront[] = {2, 3};
-    int expectedBack[]  = {5, 6};
-
-    int actualFront[2];
-    int actualBack[2];
-
-    listToArray(&frontList, actualFront);
-    listToArray(&backList, actualBack);
-
-    TEST_ASSERT_EQUAL_INT_ARRAY(expectedFront, actualFront, 2);
-    TEST_ASSERT_EQUAL_INT_ARRAY(expectedBack, actualBack, 2);
+// Helper: verify list content matches expected
+void verifyList(LinkedList *ll, int expected[], int size) {
+    TEST_ASSERT_EQUAL_INT(size, ll->size);
+    ListNode *cur = ll->head;
+    for (int i = 0; i < size; i++) {
+        TEST_ASSERT_NOT_NULL(cur);
+        TEST_ASSERT_EQUAL_INT(expected[i], cur->item);
+        cur = cur->next;
+    }
+    TEST_ASSERT_NULL(cur);
 }
 
-void test_frontBackSplit_odd_list(void) {
-    // Input: 2, 3, 5, 6, 7
-    insertNode(&testList, 0, 2);
-    insertNode(&testList, 1, 3);
-    insertNode(&testList, 2, 5);
-    insertNode(&testList, 3, 6);
-    insertNode(&testList, 4, 7);
+void setUp(void) {}
+void tearDown(void) {}
 
-    frontBackSplitLL(&testList, &frontList, &backList);
+// === Test Cases ===
 
-    int expectedFront[] = {2, 3, 5};
-    int expectedBack[]  = {6, 7};
+// Test 1: normal case
+void test_recursiveReverse_basic(void) {
+    LinkedList ll;
+    int input[] = {1, 2, 3, 4, 5};
+    int expected[] = {5, 4, 3, 2, 1};
+    createListFromArray(&ll, input, 5);
 
-    int actualFront[3];
-    int actualBack[2];
+    recursiveReverse(&ll.head);
 
-    listToArray(&frontList, actualFront);
-    listToArray(&backList, actualBack);
-
-    TEST_ASSERT_EQUAL_INT_ARRAY(expectedFront, actualFront, 3);
-    TEST_ASSERT_EQUAL_INT_ARRAY(expectedBack, actualBack, 2);
+    verifyList(&ll, expected, 5);
+    removeAllItems(&ll);
 }
 
-void test_frontBackSplit_single_element(void) {
-    // Input: 10
-    insertNode(&testList, 0, 10);
+// Test 2: single node
+void test_recursiveReverse_singleNode(void) {
+    LinkedList ll;
+    int input[] = {42};
+    int expected[] = {42};
+    createListFromArray(&ll, input, 1);
 
-    frontBackSplitLL(&testList, &frontList, &backList);
+    recursiveReverse(&ll.head);
 
-    int expectedFront[] = {10};
-    int expectedBack[]  = {};
-
-    int actualFront[1];
-    listToArray(&frontList, actualFront);
-
-    TEST_ASSERT_EQUAL_INT_ARRAY(expectedFront, actualFront, 1);
-    TEST_ASSERT_NULL(backList.head); // back list must be empty
+    verifyList(&ll, expected, 1);
+    removeAllItems(&ll);
 }
 
-void test_frontBackSplit_empty_list(void) {
-    // Input: empty
-    frontBackSplitLL(&testList, &frontList, &backList);
+// Test 3: empty list
+void test_recursiveReverse_emptyList(void) {
+    ListNode *head = NULL;
+    recursiveReverse(&head);
+    TEST_ASSERT_NULL(head);
+}
 
-    TEST_ASSERT_NULL(frontList.head);
-    TEST_ASSERT_NULL(backList.head);
+// Test 4: two nodes
+void test_recursiveReverse_twoNodes(void) {
+    LinkedList ll;
+    int input[] = {10, 20};
+    int expected[] = {20, 10};
+    createListFromArray(&ll, input, 2);
+
+    recursiveReverse(&ll.head);
+
+    verifyList(&ll, expected, 2);
+    removeAllItems(&ll);
+}
+
+// Test 5: list with negative numbers
+void test_recursiveReverse_negativeNumbers(void) {
+    LinkedList ll;
+    int input[] = {-1, -2, -3};
+    int expected[] = {-3, -2, -1};
+    createListFromArray(&ll, input, 3);
+
+    recursiveReverse(&ll.head);
+
+    verifyList(&ll, expected, 3);
+    removeAllItems(&ll);
 }
 
 int main(void) {
     UNITY_BEGIN();
-
-    RUN_TEST(test_frontBackSplit_even_list);
-    RUN_TEST(test_frontBackSplit_odd_list);
-    RUN_TEST(test_frontBackSplit_single_element);
-    RUN_TEST(test_frontBackSplit_empty_list);
-
+    RUN_TEST(test_recursiveReverse_basic);
+    RUN_TEST(test_recursiveReverse_singleNode);
+    RUN_TEST(test_recursiveReverse_emptyList);
+    RUN_TEST(test_recursiveReverse_twoNodes);
+    RUN_TEST(test_recursiveReverse_negativeNumbers);
     return UNITY_END();
 }

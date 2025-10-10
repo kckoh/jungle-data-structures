@@ -1,4 +1,5 @@
 #include "linked_list.h"
+#include <math.h>
 #include <stdio.h>
 
 int insertSortedLL(LinkedList *ll, int item) {
@@ -230,6 +231,40 @@ void printList(LinkedList *ll) {
     cur = cur->next;
   }
   printf("\n");
+}
+
+ListNode *recursiveListNode(ListNode *cur, ListNode *prev) {
+
+  if (cur == NULL) {
+    return prev;
+  }
+
+  ListNode *next = cur->next;
+  cur->next = prev;
+  prev = cur;
+  cur = next;
+  return recursiveListNode(cur, prev);
+}
+
+// start: 11:09
+// finish:
+void recursiveReverse(ListNode **ptrHead) {
+  if (ptrHead == NULL || *ptrHead == NULL) {
+    return;
+  }
+  ListNode *prev = NULL;
+  ListNode *cur = *ptrHead;
+  /*
+
+  while (cur != NULL) {
+    ListNode *next = cur->next;
+    cur->next = prev;
+    prev = cur;
+    cur = next;
+  }
+  *ptrHead = prev;
+  */
+  *ptrHead = recursiveListNode(cur, prev);
 }
 
 int *returnList(LinkedList *ll, int size) {
