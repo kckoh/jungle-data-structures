@@ -247,7 +247,7 @@ ListNode *recursiveListNode(ListNode *cur, ListNode *prev) {
 }
 
 // start: 11:09
-// finish:
+// finish: 11:40
 void recursiveReverse(ListNode **ptrHead) {
   if (ptrHead == NULL || *ptrHead == NULL) {
     return;
