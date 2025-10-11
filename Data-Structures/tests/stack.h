@@ -11,7 +11,8 @@ typedef struct _stack
 void createStackFromLinkedList(LinkedList *ll , Stack *stack);
 void removeEvenValues(Stack *s);
 int isStackPairwiseConsecutive(Stack *s);
-
+void removeUntilStack(Stack *s, int value);
+int balanced(char *expression);
 
 void push(Stack *s , int item);
 int pop(Stack *s);
