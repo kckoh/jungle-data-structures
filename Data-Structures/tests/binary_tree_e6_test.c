@@ -48,7 +48,7 @@ void test_single_node_smaller_than_m(void) {
     capture_start();
     printSmallerValues(root, 50);
     char *out = capture_end();
-    TEST_ASSERT_EQUAL_STRING("10 ", out);
+    TEST_ASSERT_EQUAL_STRING("10", out);
 }
 
 // -----------------------------

@@ -25,6 +25,7 @@ int identical(BTNode *tree1, BTNode *tree2) {
 }
 
 int max_int(int a, int b) { return (a > b) ? a : b; }
+int min_int(int a, int b) { return (a > b) ? b : a; }
 
 int maxHeight(BTNode *node) {
   if (node == NULL) {
@@ -99,11 +100,55 @@ void mirrorTree(BTNode *node) {
   mirrorTree(node->right);
 }
 
-void printSmallerValues(BTNode *node, int m) { /* add your code here */ }
+void printSmallerValues(BTNode *node, int m) {
+  if (node == NULL) {
+    return;
+  }
+  if (node->item < m) {
+    printf("%d", node->item);
+  }
+  if (node->left != NULL) {
+    printSmallerValues(node->left, m);
+  }
+  if (node->right != NULL) {
+    printSmallerValues(node->right, m);
+  }
+}
 
-int smallestValue(BTNode *node) { /* add your code here */ }
+int smallestValue(BTNode *node) {
+  if (node == NULL) {
+    return 1000000;
+  }
+  int left = node->item;
+  int right = node->item;
 
-int hasGreatGrandchild(BTNode *node) { /* add your code here */ }
+  if (node->left != NULL) {
+    left = min_int(smallestValue(node->left), left);
+  }
+
+  if (node->right != NULL) {
+    right = min_int(right, smallestValue(node->right));
+  }
+
+  return min_int(left, right);
+}
+
+int hasGreatGrandchild(BTNode *node) {
+  if (node == NULL)
+    return 0;                               // NULL의 깊이를 -1로 두면
+                                            // 리프의 깊이는 0이 됩니다.
+  int ld = hasGreatGrandchild(node->left);  // 왼쪽 서브트리의 최대 깊이
+  int rd = hasGreatGrandchild(node->right); // 오른쪽 서브트리의 최대 깊이
+  int count = 0;
+  count = ld + rd;
+
+  int depth = maxHeight(node);
+  if (depth >= 3) {            // 최소 한 명의 증손자(거리 3) 존재
+    printf("%d ", node->item); // 문제 요구: 값 출력
+    count++;
+  }
+  return count; // 함수의 반환값은 '깊이'
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 
