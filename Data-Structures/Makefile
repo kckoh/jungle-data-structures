@@ -10,27 +10,33 @@ SRCS_LINKED_LIST = tests/linked_list.c
 SRCS_QUEUE = tests/queue.c
 SRCS_STACK = tests/stack.c
 SRCS_BINARY_TREE = tests/binary_tree.c
+SRCS_BINARY_SEARCH_TREE = tests/binary_search_tree.c
 
 # 테스트 소스 파일들 자동 감지
 TEST_SOURCES_A := $(wildcard tests/linked_list_a*_test.c)
 TEST_SOURCES_C := $(wildcard tests/stack_queue_c*_test.c)
 TEST_SOURCES_E := $(wildcard tests/binary_tree_e*_test.c)
+TEST_SOURCES_F := $(wildcard tests/binary_tree_f*_test.c)
 
 # 모든 테스트 소스 파일 목록을 통합
 # function name duplicates between trees and stack; don't run this
-ALL_TEST_SOURCES := $(TEST_SOURCES_A) $(TEST_SOURCES_C) $(TEST_SOURCES_E)
+ALL_TEST_SOURCES := $(TEST_SOURCES_A) $(TEST_SOURCES_C) $(TEST_SOURCES_E) $(TEST_SOURCES_F)
 
 # 소스 파일 이름으로부터 타겟(실행 파일) 이름 생성
 TARGET_A_STEMS := $(patsubst tests/%_test.c,%,$(TEST_SOURCES_A))
 TARGET_C_STEMS := $(patsubst tests/%_test.c,%,$(TEST_SOURCES_C))
 TARGET_E_STEMS := $(patsubst tests/%_test.c,%,$(TEST_SOURCES_E))
+TARGET_F_STEMS := $(patsubst tests/%_test.c,%,$(TEST_SOURCES_F))
+
 
 TARGET_A_RUNNERS := $(addprefix test_runner_,$(TARGET_A_STEMS))
 TARGET_C_RUNNERS := $(addprefix test_runner_,$(TARGET_C_STEMS))
 TARGET_E_RUNNERS := $(addprefix test_runner_,$(TARGET_E_STEMS))
+TARGET_F_RUNNERS := $(addprefix test_runner_,$(TARGET_F_STEMS))
+
 
 # 모든 타겟 실행 파일
-ALL_TARGETS := $(TARGET_A_RUNNERS) $(TARGET_C_RUNNERS) $(TARGET_E_RUNNERS)
+ALL_TARGETS := $(TARGET_A_RUNNERS) $(TARGET_C_RUNNERS) $(TARGET_E_RUNNERS) $(TARGET_F_RUNNERS)
 .SECONDARY:
 #-----------------------------------------------------------------------------
 # 규칙 정의
@@ -54,6 +60,10 @@ clean:
 	rm -f $(ALL_TARGETS)
 
 
+
+# Binary Search Tree 규칙을 '일반 규칙'보다 위에 둡니다.
+test_runner_binary_search_tree_%_test: tests/binary_search_tree_%_test.c $(UNITY) $(SRCS_BINARY_SEARCH_TREE)
+	$(CC) $(CFLAGS) -o $@ $^
 
 # Binary Tree 규칙을 '일반 규칙'보다 위에 둡니다.
 test_runner_binary_tree_%_test: tests/binary_tree_%_test.c $(UNITY) $(SRCS_BINARY_TREE)
