@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 int identical(BTNode *tree1, BTNode *tree2)
-
 {
   /* add your code here */
   // 둘 다 NULL이면 1을 반환
@@ -24,6 +23,42 @@ int identical(BTNode *tree1, BTNode *tree2)
   return identical(tree1->left, tree2->left) &&
          identical(tree1->right, tree2->right);
   // 그 외에는 왼쪽과 오른쪽을 각각 검사한 결과 반환
+}
+
+int maxHeight(BTNode *node)
+{
+    /* add your code here */
+}
+
+int countOneChildNodes(BTNode *node)
+{
+    /* add your code here */
+}
+
+
+int sumOfOddNodes(BTNode *node)
+{
+    /* add your code here */
+}
+
+void mirrorTree(BTNode *node)
+{
+	/* add your code here */
+}
+
+void printSmallerValues(BTNode *node, int m)
+{
+	/* add your code here */
+}
+
+int smallestValue(BTNode *node)
+{
+	/* add your code here */
+}
+
+int hasGreatGrandchild(BTNode *node)
+{
+	/* add your code here */
 }
 
 /////////////////////////////////////////////////////////////////////////////////

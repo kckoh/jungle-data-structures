@@ -20,6 +20,14 @@ typedef struct _stack{
 
 // You should not change the prototypes of these functions
 int identical(BTNode *tree1, BTNode *tree2);
+int maxHeight(BTNode *node);
+int countOneChildNodes(BTNode *node);
+int sumOfOddNodes(BTNode *node);
+void mirrorTree(BTNode *node);
+void printSmallerValues(BTNode *node, int m);
+int smallestValue(BTNode *node);
+int hasGreatGrandchild(BTNode *node);
+
 
 BTNode* createBTNode(int item);
 
