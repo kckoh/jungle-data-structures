@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int identical(BTNode *tree1, BTNode *tree2)
-{
+int identical(BTNode *tree1, BTNode *tree2) {
   /* add your code here */
   // 둘 다 NULL이면 1을 반환
   if (tree1 == NULL && tree2 == NULL) {
@@ -25,41 +24,67 @@ int identical(BTNode *tree1, BTNode *tree2)
   // 그 외에는 왼쪽과 오른쪽을 각각 검사한 결과 반환
 }
 
-int maxHeight(BTNode *node)
-{
-    /* add your code here */
+int max_int(int a, int b) { return (a > b) ? a : b; }
+
+int maxHeight(BTNode *node) {
+  if (node == NULL) {
+    return -1;
+  }
+
+  return max_int(maxHeight(node->left), maxHeight(node->right)) + 1;
 }
 
-int countOneChildNodes(BTNode *node)
-{
-    /* add your code here */
+int countOneChildNodes(BTNode *node) {
+  if (node == NULL) {
+    return 0;
+  }
+
+  if (node->left == NULL && node->right != NULL) {
+    return countOneChildNodes(node->right) + 1;
+  }
+
+  else if (node->right == NULL && node->left != NULL) {
+    return countOneChildNodes(node->left) + 1;
+  } else if (node->right != NULL && node->left != NULL) {
+    return countOneChildNodes(node->left) + countOneChildNodes(node->right);
+  }
+  // two children are NULL
+  return 0;
 }
 
+int sumOfOddNodes(BTNode *node) {
+  if (node == NULL) {
+    return 0;
+  }
 
-int sumOfOddNodes(BTNode *node)
-{
-    /* add your code here */
+  int odd = 0;
+  if (node->item % 2 != 0) {
+    odd = node->item;
+  }
+
+  if (node->left != NULL && node->right != NULL) {
+    return odd + sumOfOddNodes(node->left) + sumOfOddNodes(node->right);
+  }
+
+  // right node isn't empty
+  if (node->left == NULL) {
+    return odd + sumOfOddNodes(node->right);
+  }
+
+  // left node isn't empty
+  if (node->right == NULL) {
+    return odd + sumOfOddNodes(node->left);
+  }
+  return odd;
 }
 
-void mirrorTree(BTNode *node)
-{
-	/* add your code here */
-}
+void mirrorTree(BTNode *node) { /* add your code here */ }
 
-void printSmallerValues(BTNode *node, int m)
-{
-	/* add your code here */
-}
+void printSmallerValues(BTNode *node, int m) { /* add your code here */ }
 
-int smallestValue(BTNode *node)
-{
-	/* add your code here */
-}
+int smallestValue(BTNode *node) { /* add your code here */ }
 
-int hasGreatGrandchild(BTNode *node)
-{
-	/* add your code here */
-}
+int hasGreatGrandchild(BTNode *node) { /* add your code here */ }
 
 /////////////////////////////////////////////////////////////////////////////////
 
