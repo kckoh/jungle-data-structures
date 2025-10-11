@@ -75,7 +75,8 @@ static BTNode* build_prompt_example_mirror(void) {
     r->left->left = createBTNode(1);
     r->left->right = createBTNode(3);
 
-    r->right->right = createBTNode(6);
+    // 수정: 오른쪽(5)의 자식 6은 '왼쪽'에 붙습니다.
+    r->right->left = createBTNode(6);
     return r;
 }
 

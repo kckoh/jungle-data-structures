@@ -78,7 +78,26 @@ int sumOfOddNodes(BTNode *node) {
   return odd;
 }
 
-void mirrorTree(BTNode *node) { /* add your code here */ }
+// a recursive function to modify the root node that mirros tree
+void mirrorTree(BTNode *node) {
+  if (node == NULL) {
+    return;
+  }
+  BTNode *temp;
+  temp = node->left;
+  node->left = node->right;
+  node->right = temp;
+  if (node->left == NULL) {
+    mirrorTree(node->right);
+    return;
+  } else if (node->right == NULL) {
+    mirrorTree(node->left);
+    return;
+  }
+  // both children are not nuLL
+  mirrorTree(node->left);
+  mirrorTree(node->right);
+}
 
 void printSmallerValues(BTNode *node, int m) { /* add your code here */ }
 
