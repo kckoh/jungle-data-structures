@@ -54,7 +54,7 @@ static int read_ints_from_file(const char *path, int *out, int maxn) {
 static BSTNode *root;
 
 void setUp(void)   { root = NULL; }
-void tearDown(void){ removeAll(&root); }
+void tearDown(void){ removeAllStack(&root); }
 
 static void insert_many(BSTNode **r, const int *vals, int n) {
     for (int i = 0; i < n; i++) insertBSTNode(r, vals[i]);

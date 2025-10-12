@@ -49,3 +49,10 @@ BSTNode* dequeue(QueueNode **head, QueueNode **tail);
 void enqueue(QueueNode **head, QueueNode **tail, BSTNode *node);
 int isEmpty(QueueNode *head);
 void removeAll(BSTNode **node);
+
+// stack prototype
+void push(Stack *stack, BSTNode *node);
+BSTNode *pop(Stack *s);
+BSTNode *peek(Stack *s);
+int isEmptyStack(Stack *s);
+void removeAllStack(BSTNode **node);
