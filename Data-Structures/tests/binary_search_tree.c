@@ -1,5 +1,6 @@
 #include "binary_search_tree.h"
 #include <math.h>
+#include <stdio.h>
 
 // TODO: I need to fix the push duplicate
 int findLengthQueue(Queue *q) {
@@ -78,35 +79,101 @@ void preOrderIterative(BSTNode *root) {
     if (root == NULL) {
       return;
     }
-
     Stack s;
     s.top = NULL;
 
-    BSTNode *cur = NULL;
-    push(&s,root);
 
-    while ( !isEmptyStack(&s)) {
+    BSTNode *cur = root;
+
+    while (cur != NULL || !isEmptyStack(&s)) {
+
+        // 왼쪽 끝까지
+        while (cur != NULL) {
+            push(&s, cur);
+            cur = cur->left;
+        }
 
         // 하나 꺼내서 방문
         BSTNode *node = pop(&s);
         printf("%d ",node->item);
 
-        if(node->right != NULL){
-            push(&s, node->right);
-        }
-
-        if (node ->left != NULL){
-            push(&s, node->left);
-        }
-
+        // 오른쪽으로 이동
+        cur = node->right;
     }
 }
 
+// very difficult
 void postOrderIterativeS1(BSTNode *root) {
+    if (root == NULL) {
+      return;
+    }
+    Stack s;
+    s.top = NULL;
+
+    BSTNode *cur = root;
+    BSTNode *lastVisited = NULL;
+    while (cur != NULL || !isEmptyStack(&s)) {
+
+        // 왼쪽 끝까지
+        while (cur != NULL) {
+            push(&s, cur);
+            cur = cur->left;
+        }
+
+        // 하나 peek
+        BSTNode * p = peek(&s);
+        if (p->right != NULL && lastVisited != p->right){
+            cur = p->right;
+        }
+        // 방문 and p->right = NULL
+        else{
+            BSTNode *popped = pop(&s);
+           printf("%d ", popped->item);
+           lastVisited = popped;
+        }
+
+    }
+
 
 }
 
-void postOrderIterativeS2(BSTNode *root) { /* add your code here */ }
+void postOrderIterativeS2(BSTNode *root) {
+
+    if (root == NULL) {
+      return;
+    }
+
+    Stack s1;
+    s1.top = NULL;
+
+    Stack s2;
+    s2.top = NULL;
+
+    BSTNode *cur = NULL;
+    push(&s1,root);
+
+    while ( !isEmptyStack(&s1)) {
+
+        // 하나 꺼내서 방문
+        BSTNode *node = pop(&s1);
+        push(&s2,node);
+
+        if (node ->left != NULL){
+            push(&s1, node->left);
+        }
+
+        if(node->right != NULL){
+            push(&s1, node->right);
+        }
+    }
+
+    while ( !isEmptyStack(&s2)) {
+        // 하나 꺼내서 방문
+        BSTNode *node = pop(&s2);
+        printf("%d ",node->item);
+    }
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
