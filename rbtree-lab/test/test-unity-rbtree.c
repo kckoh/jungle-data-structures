@@ -1,4 +1,5 @@
 #include "unity.h"
+#include "unity_internals.h"
 #include <rbtree.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -156,6 +157,12 @@ void test_find_erase_rand(void) {
   free(arr);
 }
 
+void test_delete_empty_tree(void) {
+  rbtree *t = new_rbtree();
+  delete_rbtree(t);   // should not crash
+  TEST_PASS();        // if it reaches here, it's good
+}
+
 /* ------------------------
    Test runner
 ------------------------- */
@@ -163,6 +170,7 @@ void test_find_erase_rand(void) {
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_init);
+  RUN_TEST(test_delete_empty_tree);
   RUN_TEST(test_insert_single);
   RUN_TEST(test_find_single);
   RUN_TEST(test_erase_root);

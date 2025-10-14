@@ -13,9 +13,10 @@ typedef struct node_t {
   struct node_t *parent, *left, *right;
 } node_t;
 
+// nil -> black and leaf node
 typedef struct {
   node_t *root;
-  node_t *nil;  // for sentinel
+  node_t *nil; // for sentinel
 } rbtree;
 
 rbtree *new_rbtree(void);
@@ -29,4 +30,4 @@ int rbtree_erase(rbtree *, node_t *);
 
 int rbtree_to_array(const rbtree *, key_t *, const size_t);
 
-#endif  // _RBTREE_H_
+#endif // _RBTREE_H_
