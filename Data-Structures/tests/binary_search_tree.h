@@ -42,7 +42,7 @@ void inOrderIterative(BSTNode *root);
 void preOrderIterative(BSTNode *root);
 void postOrderIterativeS1(BSTNode *root);
 void postOrderIterativeS2(BSTNode *root);
-
+BSTNode* removeNodeFromTree(BSTNode *root, int value);
 
 
 BSTNode* dequeue(QueueNode **head, QueueNode **tail);
