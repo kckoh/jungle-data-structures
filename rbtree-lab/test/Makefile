@@ -1,6 +1,6 @@
 .PHONY: test clean
 
-CFLAGS = -I ../src -Wall -g
+CFLAGS = -I ../src -Wall -g -DRBTREE_TESTING -DSENTINEL
 CC = cc
 
 test:test-unity-rbtree
