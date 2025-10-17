@@ -4,6 +4,12 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef TEST_ASSERT_NOT_EQUAL_PTR
+#define TEST_ASSERT_NOT_EQUAL_PTR(exp, act) TEST_ASSERT_TRUE((exp)!=(act))
+#endif
+#ifndef TEST_ASSERT_NOT_EQUAL_PTR_MESSAGE
+#define TEST_ASSERT_NOT_EQUAL_PTR_MESSAGE(exp, act, msg) TEST_ASSERT_TRUE_MESSAGE((exp)!=(act), (msg))
+#endif
 
 void setUp(void) {}
 void tearDown(void) {}
@@ -480,6 +486,195 @@ void test_insert_rl_case_shapes_and_props(void) {
   delete_rbtree(t);
 }
 
+
+/* ========================
+   Min / Max / Find — Dedicated Tests
+========================= */
+
+/* 빈 트리, 단일 노드, 다수 노드(중복 포함)에서 find 동작 검증 */
+void test_find_suite(void) {
+  // 1) 빈 트리
+  {
+    rbtree *t = new_rbtree();
+    node_t *q = rbtree_find(t, 42);
+#ifdef SENTINEL
+    TEST_ASSERT_EQUAL_PTR_MESSAGE(t->nil, q, "empty tree: find should return t->nil");
+#else
+    TEST_ASSERT_NULL_MESSAGE(q, "empty tree: find should return NULL");
+#endif
+    delete_rbtree(t);
+  }
+
+  // 2) 단일 노드
+  {
+    rbtree *t = new_rbtree();
+    node_t *p = rbtree_insert(t, 100);
+    TEST_ASSERT_NOT_NULL(p);
+
+    node_t *q = rbtree_find(t, 100);
+    TEST_ASSERT_NOT_NULL(q);
+    TEST_ASSERT_EQUAL_INT(100, q->key);
+    TEST_ASSERT_EQUAL_PTR(p, q);
+
+    // 없는 키
+    q = rbtree_find(t, 99);
+#ifdef SENTINEL
+    TEST_ASSERT_EQUAL_PTR(t->nil, q);
+#else
+    TEST_ASSERT_NULL(q);
+#endif
+    delete_rbtree(t);
+  }
+
+  // 3) 다수 노드(중복 포함)
+  {
+    rbtree *t = new_rbtree();
+    key_t arr[] = {10, 5, 20, 5, 30, 5, 15};
+    size_t n = sizeof(arr)/sizeof(arr[0]);
+    for (size_t i = 0; i < n; i++) {
+      TEST_ASSERT_NOT_NULL(rbtree_insert(t, arr[i]));
+    }
+
+    // 존재하는 키들
+    // 기존 (C++ 문법) —— 지우기
+    // for (int k : (int[]){5, 10, 15, 20, 30}) {
+    //   node_t *q = rbtree_find(t, k);
+    //   ...
+    // }
+
+    // 새 코드 (C)
+    int keys[] = {5, 10, 15, 20, 30};
+    size_t keys_n = sizeof(keys) / sizeof(keys[0]);
+    for (size_t i = 0; i < keys_n; i++) {
+      int k = keys[i];
+      node_t *q = rbtree_find(t, k);
+    #ifdef SENTINEL
+      TEST_ASSERT_TRUE_MESSAGE(q != t->nil, "find should not return t->nil");
+    #else
+      TEST_ASSERT_NOT_NULL(q);
+    #endif
+      TEST_ASSERT_EQUAL_INT(k, q->key);
+    }
+
+    // 없는 키
+    node_t *q = rbtree_find(t, 7);
+#ifdef SENTINEL
+    TEST_ASSERT_EQUAL_PTR(t->nil, q);
+#else
+    TEST_ASSERT_NULL(q);
+#endif
+
+    // 중복값 5 하나 삭제 후에도 find(5)는 여전히 존재해야 함
+    node_t *p5 = rbtree_find(t, 5);
+#ifdef SENTINEL
+    TEST_ASSERT_NOT_EQUAL_PTR(t->nil, p5);
+#else
+    TEST_ASSERT_NOT_NULL(p5);
+#endif
+    rbtree_erase(t, p5);
+
+    q = rbtree_find(t, 5);
+#ifdef SENTINEL
+    TEST_ASSERT_NOT_EQUAL_PTR_MESSAGE(t->nil, q, "duplicates: after erasing one 5, another 5 should remain");
+#else
+    TEST_ASSERT_NOT_NULL_MESSAGE(q, "duplicates: after erasing one 5, another 5 should remain");
+#endif
+    TEST_ASSERT_EQUAL_INT(5, q->key);
+
+    delete_rbtree(t);
+  }
+}
+
+/* rbtree_min 전용 검증: 빈/단일/다수/삭제 후 */
+void test_min_suite(void) {
+  // 1) 빈 트리
+  {
+    rbtree *t = new_rbtree();
+    node_t *mn = rbtree_min(t);
+#ifdef SENTINEL
+    TEST_ASSERT_EQUAL_PTR(t->nil, mn);
+#else
+    TEST_ASSERT_NULL(mn);
+#endif
+    delete_rbtree(t);
+  }
+
+  // 2) 단일 노드
+  {
+    rbtree *t = new_rbtree();
+    TEST_ASSERT_NOT_NULL(rbtree_insert(t, 42));
+    node_t *mn = rbtree_min(t);
+    TEST_ASSERT_NOT_NULL(mn);
+    TEST_ASSERT_EQUAL_INT(42, mn->key);
+    delete_rbtree(t);
+  }
+
+  // 3) 다수 노드 + 삭제 후
+  {
+    rbtree *t = new_rbtree();
+    key_t arr[] = {10, 5, 8, 34, 67, 23, 156, 24, 2, 12};
+    size_t n = sizeof(arr)/sizeof(arr[0]);
+    for (size_t i = 0; i < n; i++) TEST_ASSERT_NOT_NULL(rbtree_insert(t, arr[i]));
+
+    node_t *mn = rbtree_min(t);
+    TEST_ASSERT_NOT_NULL(mn);
+    TEST_ASSERT_EQUAL_INT(2, mn->key);
+
+    // 최소값 삭제 후 다음 최소값 확인 (5)
+    rbtree_erase(t, mn);
+    mn = rbtree_min(t);
+    TEST_ASSERT_NOT_NULL(mn);
+    TEST_ASSERT_EQUAL_INT(5, mn->key);
+
+    delete_rbtree(t);
+  }
+}
+
+/* rbtree_max 전용 검증: 빈/단일/다수/삭제 후 */
+void test_max_suite(void) {
+  // 1) 빈 트리
+  {
+    rbtree *t = new_rbtree();
+    node_t *mx = rbtree_max(t);
+#ifdef SENTINEL
+    TEST_ASSERT_EQUAL_PTR(t->nil, mx);
+#else
+    TEST_ASSERT_NULL(mx);
+#endif
+    delete_rbtree(t);
+  }
+
+  // 2) 단일 노드
+  {
+    rbtree *t = new_rbtree();
+    TEST_ASSERT_NOT_NULL(rbtree_insert(t, 7));
+    node_t *mx = rbtree_max(t);
+    TEST_ASSERT_NOT_NULL(mx);
+    TEST_ASSERT_EQUAL_INT(7, mx->key);
+    delete_rbtree(t);
+  }
+
+  // 3) 다수 노드 + 삭제 후
+  {
+    rbtree *t = new_rbtree();
+    key_t arr[] = {10, 5, 8, 34, 67, 23, 156, 24, 2, 12};
+    size_t n = sizeof(arr)/sizeof(arr[0]);
+    for (size_t i = 0; i < n; i++) TEST_ASSERT_NOT_NULL(rbtree_insert(t, arr[i]));
+
+    node_t *mx = rbtree_max(t);
+    TEST_ASSERT_NOT_NULL(mx);
+    TEST_ASSERT_EQUAL_INT(156, mx->key);
+
+    // 최대값 삭제 후 다음 최대값 확인 (67)
+    rbtree_erase(t, mx);
+    mx = rbtree_max(t);
+    TEST_ASSERT_NOT_NULL(mx);
+    TEST_ASSERT_EQUAL_INT(67, mx->key);
+
+    delete_rbtree(t);
+  }
+}
+
 /* ------------------------
    Test runner
 ------------------------- */
@@ -502,5 +697,14 @@ int main(void) {
   RUN_TEST(test_right_rotate_updates_parent_link_when_y_is_right_child);
   // 필요 시 선행조건 위반 테스트도 추가
   RUN_TEST(test_left_rotate_precondition_fail_when_no_right_child);
+
+  RUN_TEST(test_find_suite);
+  RUN_TEST(test_min_suite);
+  RUN_TEST(test_max_suite);
+  // insert test
+  RUN_TEST(test_insert_rr_case_shapes_and_props);
+  RUN_TEST(test_insert_ll_case_shapes_and_props);
+  RUN_TEST(test_insert_lr_case_shapes_and_props);
+  RUN_TEST(test_insert_rl_case_shapes_and_props);
   return UNITY_END();
 }

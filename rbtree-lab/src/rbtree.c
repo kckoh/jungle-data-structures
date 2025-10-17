@@ -1,6 +1,7 @@
 #include "rbtree.h"
 
 #include <stdlib.h>
+#include <sys/stdio.h>
 
 rbtree *new_rbtree(void) {
   rbtree *p = (rbtree *)calloc(1, sizeof(rbtree));
@@ -33,10 +34,97 @@ void delete_rbtree(rbtree *t) {
   free(t);
 }
 
+static node_t *newNode(rbtree *t, key_t key){
+    node_t *z = (node_t*) malloc(sizeof(node_t));
+
+    z->key = key;
+    z->color = RBTREE_RED;
+    z->left = t->nil;
+    z->right = t->nil;
+    z->parent = t->nil;
+    return z;
+}
+
+void rbtree_fixup(rbtree *t, node_t *z){
+    while (z->parent->color == RBTREE_RED){
+        if (z->parent == z->parent->parent->left){ //is z's parent a left child?
+            node_t *z_uncle = z->parent->parent->right;
+            // CASE 1
+            if (z_uncle->color == RBTREE_RED){
+                z->parent->color = RBTREE_BLACK;
+                z_uncle->color = RBTREE_BLACK;
+                z->parent->parent->color = RBTREE_RED;
+                z = z->parent->parent;
+            }
+
+            else{
+                // CASE 2
+                if(z==z->parent->right){
+                    z = z->parent;
+                    left_rotate(t, z);
+                }
+
+                // CASE 3
+                z->parent->color = RBTREE_BLACK;
+                z->parent->parent->color = RBTREE_RED;
+                right_rotate(t, z->parent->parent);
+            }
+        }
+        // same as above except with right and left exchanged
+        else{
+            node_t *z_uncle = z->parent->parent->left;
+            // CASE 1
+            if (z_uncle->color == RBTREE_RED){
+                z->parent->color = RBTREE_BLACK;
+                z_uncle->color = RBTREE_BLACK;
+                z->parent->parent->color = RBTREE_RED;
+                z = z->parent->parent;
+            }
+            else {
+                // CASE 2
+                if (z== z->parent->left){
+                    z =z->parent;
+                    right_rotate(t, z);
+                }
+
+                // CASE 3
+                z->parent->color = RBTREE_BLACK;
+                z->parent->parent->color = RBTREE_RED;
+                left_rotate(t,z->parent->parent);
+            }
+        }
+    }
+    t->root->color = RBTREE_BLACK;
+
+}
+
+
 node_t *rbtree_insert(rbtree *t, const key_t key) {
   // TODO: implement insert
-  return t->root;
+  node_t *x = t->root;
+  node_t *y = t->nil;
+  node_t *z = newNode(t, key);
+
+  while ( x != t->nil){ // descend until reaching the sentinel
+      y = x;
+      if (z->key < x->key) x = x->left;
+      else x = x->right;
+  }
+
+  z->parent = y; // found the location - insert z with parent y
+
+  if (y == t->nil) t->root = z; // t was empty
+  else if (z->key < y->key) y->left = z;
+  else y->right = z;
+
+  //z.left = t.nil
+  // z.right = t.nil
+  // z.color = red
+  rbtree_fixup(t,z);
+  return z;
 }
+
+
 
 node_t *rbtree_find(const rbtree *t, const key_t key) {
 
@@ -44,6 +132,8 @@ node_t *rbtree_find(const rbtree *t, const key_t key) {
     if (t == NULL || t->root == t->nil)
             return t->nil; // 빈 트리일
     node_t *node = t->root;
+    // if (node->left == t->nil && node->right == t->nil) return node;
+
 
     while (node != t->nil) {
         if (node->key == key) return node;
