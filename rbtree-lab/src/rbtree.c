@@ -1,16 +1,24 @@
 #include "rbtree.h"
-
 #include <stdlib.h>
+#include <sys/__endian.h>
 #include <sys/stdio.h>
 
 rbtree *new_rbtree(void) {
   rbtree *p = (rbtree *)calloc(1, sizeof(rbtree));
-  // TODO: initialize struct if needed
-  node_t *nil = calloc(1, sizeof(node_t));
+  node_t *nil = (node_t *)calloc(1, sizeof(node_t));
   nil->color = RBTREE_BLACK;
-  // point root and nil to nil
-  p->root = nil;
+  nil->left = nil;
+  nil->right = nil;
+  nil->parent = nil;
+
   p->nil = nil;
+
+#ifdef SENTINEL
+  p->root = p->nil;   // ← SENTINEL 모드: root는 nil
+#else
+  p->root = NULL;     // ← 비-센티널 모드: root는 NULL
+#endif
+
   return p;
 }
 
@@ -49,7 +57,10 @@ void rbtree_fixup(rbtree *t, node_t *z){
     while (z->parent->color == RBTREE_RED){
         if (z->parent == z->parent->parent->left){ //is z's parent a left child?
             node_t *z_uncle = z->parent->parent->right;
+
             // CASE 1
+            // 삼촌 레드
+            // 조치: recolor + 위로 올리기 -> while loop
             if (z_uncle->color == RBTREE_RED){
                 z->parent->color = RBTREE_BLACK;
                 z_uncle->color = RBTREE_BLACK;
@@ -59,12 +70,16 @@ void rbtree_fixup(rbtree *t, node_t *z){
 
             else{
                 // CASE 2
+                // 삼촌 BLACK + z가 반대방향
+                // 조치: 회전
                 if(z==z->parent->right){
                     z = z->parent;
                     left_rotate(t, z);
                 }
 
                 // CASE 3
+                // 삼촌 BLACK + z가 같은방향
+                // 조치: 회전 + 색 교환
                 z->parent->color = RBTREE_BLACK;
                 z->parent->parent->color = RBTREE_RED;
                 right_rotate(t, z->parent->parent);
@@ -129,8 +144,13 @@ node_t *rbtree_insert(rbtree *t, const key_t key) {
 node_t *rbtree_find(const rbtree *t, const key_t key) {
 
     // TODO: implement find
+#ifdef SENTINEL
     if (t == NULL || t->root == t->nil)
             return t->nil; // 빈 트리일
+#else
+    if (t == NULL || t->root == t->nil)
+            return NULL; // 빈 트리일
+#endif
     node_t *node = t->root;
     // if (node->left == t->nil && node->right == t->nil) return node;
 
@@ -141,7 +161,11 @@ node_t *rbtree_find(const rbtree *t, const key_t key) {
         else node = node->right;
     }
 
+#ifdef SENTINEL
   return t->nil;
+#else
+  return NULL;
+#endif
 }
 
 node_t *rbtree_min(const rbtree *t) {
@@ -155,6 +179,12 @@ node_t *rbtree_min(const rbtree *t) {
   }
 
   return node;
+}
+
+node_t *tree_minimum(rbtree *t, node_t *x) {
+    while (x->left != t->nil)
+        x = x->left;
+    return x;
 }
 
 node_t *rbtree_max(const rbtree *t) {
@@ -171,15 +201,125 @@ node_t *rbtree_max(const rbtree *t) {
 
 }
 
+// 트리에서 한 노드를 다른 노드로 대체
+void rbtree_transplant(rbtree *t, node_t *u, node_t *v){
+    if(u->parent == t->nil) t->root = v;
+    else if (u == u->parent ->left) u->parent->left = v;
+    else u->parent->right = v;
+    v->parent = u->parent;
+}
 
-int rbtree_erase(rbtree *t, node_t *p) {
-  // TODO: implement erase
-  return 0;
+void rbtree_delete_fixup(rbtree *t, node_t *x){
+    while(x != t->root && x->color ==RBTREE_BLACK){
+        if (x == x->parent->left){
+            node_t *w = x->parent->right;
+
+            if( w->color == RBTREE_RED){
+                w->color = RBTREE_BLACK;
+                x->parent->color = RBTREE_RED;
+                left_rotate(t, x->parent);
+                w = w->parent->right;
+            }
+            if(w->left->color == RBTREE_BLACK && w->right->color ==RBTREE_BLACK){
+                w->color = RBTREE_RED;
+                x = x->parent;
+            }
+            else{
+                if (w->right->color == RBTREE_BLACK){
+                    w->left->color = RBTREE_BLACK;
+                    w->color = RBTREE_RED;
+                    right_rotate(t, w);
+                    w = x->parent->right;
+                }
+                w->color = x->parent->color;
+                x->parent->color = RBTREE_BLACK;
+                w->right->color = RBTREE_BLACK;
+                left_rotate(t, x->parent);
+                x = t->root;
+            }
+
+        }
+        else{
+            node_t *w = x->parent->left;
+
+            if (w->color == RBTREE_RED){
+                w->color = RBTREE_BLACK;
+                x->parent->color = RBTREE_RED;
+                right_rotate(t, x->parent);
+                w = x->parent->left;
+            }
+
+            if (w->right->color == RBTREE_BLACK && w->left->color == RBTREE_BLACK){
+                w->color = RBTREE_RED;
+                x = x->parent;
+            }
+            else{
+                if (w ->left->color == RBTREE_BLACK){
+                    w->right->color = RBTREE_BLACK;
+                    w->color = RBTREE_RED;
+                    left_rotate(t, w);
+                    w = x->parent->left;
+                }
+                w->color = x->parent->color;
+                x->parent->color = RBTREE_BLACK;
+                w->left->color = RBTREE_BLACK;
+                right_rotate(t, x->parent);
+                x = t->root;
+            }
+        }
+    }
+
+    x->color = RBTREE_BLACK;
+}
+
+int rbtree_erase(rbtree *t, node_t *z) {
+    node_t *y = z;
+    node_t *x;
+    color_t y_original_color = y->color;
+    if (z->left == t->nil) {
+        x = z->right;
+        rbtree_transplant(t, z, z->right);
+    }
+
+    else if(z->right == t->nil){
+        x = z->left;
+        rbtree_transplant(t, z, z->left);
+    }
+
+    else {
+        y = tree_minimum(t,z->right);
+        y_original_color = y->color;
+        x = y->right;
+        if (y != z->right){
+           rbtree_transplant(t, y, y->right);
+          y->right = z->right;
+         y->right->parent = y;
+        }
+        else x->parent = y;
+        rbtree_transplant(t, z, y);
+        y->left = z->left;
+        y->left->parent = y;
+        y->color = z->color;
+    }
+
+    if (y_original_color == RBTREE_BLACK) rbtree_delete_fixup(t, x);
+
+    free(z);
+    return 0;
+}
+
+void inorder_traversal(node_t *node, key_t *arr, int *index, const rbtree *t) {
+  if (node == t->nil ) return;
+  inorder_traversal(node->left, arr, index,t);
+  arr[(*index)++] = node->key;
+  inorder_traversal(node->right, arr, index,t);
 }
 
 int rbtree_to_array(const rbtree *t, key_t *arr, const size_t n) {
   // TODO: implement to_array
-  return 0;
+  int index = 0;
+  inorder_traversal(t->root, arr, &index,t);
+  return index;
 }
 
 void left_rotate(rbtree *t, node_t *x) {

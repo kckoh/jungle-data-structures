@@ -126,7 +126,11 @@ void test_find_single(void) {
   TEST_ASSERT_EQUAL_PTR(p, q);
 
   q = rbtree_find(t, wrong_key);
+#ifdef SENTINEL
+  TEST_ASSERT_EQUAL_PTR(t->nil, q);
+#else
   TEST_ASSERT_NULL(q);
+#endif
 
   delete_rbtree(t);
 }

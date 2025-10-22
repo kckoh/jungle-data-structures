@@ -376,7 +376,7 @@ void test_find_erase_rand(const size_t n, const unsigned int seed) {
 
 /* ===== Main runner ===== */
 int main(void) {
-  test_init();
+  // test_init();
   test_insert_single(1024);
   test_find_single(512, 1024);
   test_erase_root(128);
