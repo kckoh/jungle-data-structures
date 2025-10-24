@@ -75,6 +75,8 @@ team_t team = {
 // pointer to the prologue block (starting block)
 static char *heap_listp = 0;
 
+static char *last_allocp = 0;
+
 static void *coalesce(void *bp)
 {
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
@@ -154,12 +156,12 @@ int mm_init(void)
     heap_listp += (2*WSIZE);
 
     if (extend_heap(CHUNKSIZE/WSIZE) == NULL) return -1;
+    last_allocp = heap_listp;
 
     return 0;
 }
 
 static void *find_fit(size_t asize){
-// iterate each free header and see if the size < asize
 
 // find the first pointer
 void *cur = NEXT_BLKP(heap_listp);
@@ -181,7 +183,35 @@ while(1){
     return cur;
 }
 
-// this was the issue
+static void *next_fit(size_t asize) {
+    char *bp = NEXT_BLKP(last_allocp);
+    char *start = bp;
+
+    // Search from last_allocp to end of heap
+    while (GET_SIZE(HDRP(bp)) != 0) {
+        if (!GET_ALLOC(HDRP(bp)) && GET_SIZE(HDRP(bp)) >= asize) {
+            last_allocp = bp;
+            return bp;
+        }
+        bp = NEXT_BLKP(bp);
+    }
+
+    // Hit epilogue, wrap to beginning
+    bp = NEXT_BLKP(heap_listp);
+
+    // Search from beginning until we reach where we started
+    while (bp != start) {
+        if (GET_SIZE(HDRP(bp)) == 0) break;  // Hit epilogue again
+        if (!GET_ALLOC(HDRP(bp)) && GET_SIZE(HDRP(bp)) >= asize) {
+            last_allocp = bp;
+            return bp;
+        }
+        bp = NEXT_BLKP(bp);
+    }
+
+    return NULL;  // No fit found
+}
+
 static void place(void *bp, size_t asize){
     size_t csize = GET_SIZE(HDRP(bp));
 
@@ -223,7 +253,7 @@ void *mm_malloc(size_t size)
         asize = DSIZE * ((size + (DSIZE) + (DSIZE -1)) / DSIZE);
 
     // Search the free list for a fit
-    if ((bp = find_fit(asize)) != NULL) {
+    if ((bp = next_fit(asize)) != NULL) {
         place(bp, asize);
         return bp;
     }
@@ -232,6 +262,7 @@ void *mm_malloc(size_t size)
     extendsize = MAX(asize, CHUNKSIZE);
     if ((bp = extend_heap(extendsize/WSIZE)) == NULL)
         return NULL;
+
     place(bp, asize);
 
     return bp;
@@ -245,7 +276,10 @@ void mm_free(void *ptr)
     size_t size = GET_SIZE(HDRP(ptr));
    PUT(HDRP(ptr), PACK(size, 0));
    PUT(FTRP(ptr), PACK(size, 0));
-   coalesce(ptr);
+   void *coalesced = coalesce(ptr);
+
+    // Update last_allocp to the coalesced block to maintain next-fit behavior
+    last_allocp = coalesced;
 }
 
 /*
