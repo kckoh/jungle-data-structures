@@ -1,0 +1,615 @@
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+mm_init
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=2040
+find_fit start asize=2048
+mm_malloc returning existing block 0x6f8000010
+mm_malloc size=2040
+find_fit start asize=2048
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8001010
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=48
+find_fit start asize=56
+mm_malloc returning existing block 0x6f8001010
+mm_malloc size=4072
+find_fit start asize=4080
+find_fit reached epilogue
+extend_heap words=1024 size=4096
+extend_heap mem_sbrk returned 0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc returning new block 0x6f8002010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8002010
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8001010
+coalesce bp=0x6f8001010
+coalesce prev_alloc=0 next_alloc=1 size=4096
+mm_malloc size=4072
+find_fit start asize=4080
+mm_malloc returning existing block 0x6f8000010
+mm_free ptr=0x6f8002010
+coalesce bp=0x6f8002010
+coalesce prev_alloc=1 next_alloc=1 size=4096
+mm_free ptr=0x6f8000010
+coalesce bp=0x6f8000010
+coalesce prev_alloc=1 next_alloc=0 size=8192
+Team Name:ateam
+Member 1 :Harry Bovik:bovik@cs.cmu.edu
+Perf index = 40 (util) + 2 (thru) = 42/100
