@@ -37,6 +37,16 @@ team_t team = {
     ""
 };
 
+
+// TODO:
+// https://claude.ai/chat/eac24aeb-5755-40de-bfab-0c307af158ab
+// add_to_free_list -> Done
+// coalesce 수정
+// 맨위에 잇는free list 추가 코드 삭제
+// 각 케이스에 remove/add
+// place 수정 -> remove_freom_free_list 추가
+// 분할 수 남은 block을 add_to_free_list추가
+// mm_free 수정 -> last_allocp 코드 삭제
 /* Basic constants and macros */
 #define WSIZE 4
 #define DSIZE 8
@@ -61,6 +71,8 @@ team_t team = {
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
 
+#define NEXT_FREE(bp) (*(void **)bp)
+#define PREV_FREE(bp) (*(void **)((bp) + WSIZE))
 
 
 /* single word (4) or double word (8) alignment */
@@ -75,7 +87,41 @@ team_t team = {
 // pointer to the prologue block (starting block)
 static char *heap_listp = 0;
 
-static char *last_allocp = 0;
+static char *free_listp;
+
+static void remove_from_free_list(void *bp){
+    // if bp prev is null -> bp is the first element
+    // bp is the first element
+    // free_listp = bp's next
+    if (PREV_FREE(bp) == NULL) {
+        free_listp = NEXT_FREE(bp);
+    }
+    // else bp's prev's next = bp next; 전에 있는 next 를 bp next로
+    else {
+        NEXT_FREE(PREV_FREE(bp)) = NEXT_FREE(bp);
+    }
+
+    // 그전에 있는 bp's next 의 prev = bp's prev 으로
+    if (NEXT_FREE(bp) != NULL){
+        PREV_FREE(NEXT_FREE(bp)) = PREV_FREE(bp);
+    }
+
+}
+
+/*  Before:
+free_listp → [A] ↔ [B]
+After:
+free_listp → [bp] ↔ [A] ↔ [B]
+*/
+static void add_to_free_list(void *bp){
+    NEXT_FREE(bp) = free_listp;
+    PREV_FREE(bp) = NULL;
+    if(free_listp != NULL){
+        PREV_FREE(free_listp) = bp;
+    }
+    free_listp = bp;
+
+}
 
 static void *coalesce(void *bp)
 {
@@ -83,28 +129,35 @@ static void *coalesce(void *bp)
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t size = GET_SIZE(HDRP(bp));
 
+
     // both prev and next are allocated
     if (prev_alloc && next_alloc) { /* Case 1 */
+        add_to_free_list(bp);
         return bp;
     }
 
     // prev is allocated but next is free
     else if (prev_alloc && !next_alloc) { /* Case 2 */
+        remove_from_free_list(NEXT_FREE(bp));
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
         PUT(HDRP(bp), PACK(size, 0));
         PUT(FTRP(bp), PACK(size, 0));
+        add_to_free_list(bp);
     }
 
     // prev is free but next is allocated
     else if (!prev_alloc && next_alloc) { /* Case 3 */
+        add_to_free_list(PREV_FREE(bp));
         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
         PUT(FTRP(bp), PACK(size, 0));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
         bp = PREV_BLKP(bp);
+        add_to_free_list(bp);
     }
 
     // prev and next are free
     else { /* Case 4 */
+
         size += GET_SIZE(HDRP(PREV_BLKP(bp))) +
                 GET_SIZE(FTRP(NEXT_BLKP(bp)));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
@@ -131,6 +184,7 @@ static void *extend_heap(size_t words){
    PUT(FTRP(bp), PACK(size, 0)); /* Free block footer */
    PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1)); /* New epilogue header */
 
+
    /* Coalesce if the previous block was free */
    return coalesce(bp);
 }
@@ -155,32 +209,27 @@ int mm_init(void)
 
     heap_listp += (2*WSIZE);
 
+    free_listp = NULL;
+
     if (extend_heap(CHUNKSIZE/WSIZE) == NULL) return -1;
-    last_allocp = heap_listp;
 
     return 0;
 }
 
-static void *find_fit(size_t asize){
+static void *first_fit(size_t asize){
 
-// find the first pointer
-void *cur = NEXT_BLKP(heap_listp);
+    // find the first pointer
+    void *cur = free_listp;
 
-while(1){
-    // check the epilogue
-    if (GET_SIZE(HDRP(cur)) == 0) return NULL;
-
-    // check if the header is free
-    if (GET_ALLOC(HDRP(cur)) || GET_SIZE(HDRP(cur)) < asize ){
-        cur = NEXT_BLKP(cur);
-        continue;
+    while(cur != NULL){
+        // not found
+        if(GET_SIZE(HDRP(cur)) >= asize){
+            return cur;
+        }
+        cur = NEXT_FREE(cur);
     }
 
-    // found the free block
-    break;
-}
-
-    return cur;
+    return NULL;
 }
 
 static void *next_fit(size_t asize) {
@@ -212,6 +261,7 @@ static void *next_fit(size_t asize) {
     return NULL;  // No fit found
 }
 
+// free block을 할당하고, 필요하면 분할하는 함수
 static void place(void *bp, size_t asize){
     size_t csize = GET_SIZE(HDRP(bp));
 
@@ -253,7 +303,7 @@ void *mm_malloc(size_t size)
         asize = DSIZE * ((size + (DSIZE) + (DSIZE -1)) / DSIZE);
 
     // Search the free list for a fit
-    if ((bp = next_fit(asize)) != NULL) {
+    if ((bp = first_fit(asize)) != NULL) {
         place(bp, asize);
         return bp;
     }
@@ -279,7 +329,7 @@ void mm_free(void *ptr)
    void *coalesced = coalesce(ptr);
 
     // Update last_allocp to the coalesced block to maintain next-fit behavior
-    last_allocp = coalesced;
+    // last_allocp = coalesced;
 }
 
 /*
