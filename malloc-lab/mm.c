@@ -127,6 +127,40 @@ static void add_to_free_list(void *bp){
     free_listp = bp;
 }
 
+
+// static void add_to_free_list(void *bp){
+//       // Case 1: Empty list
+//       if (free_listp == NULL) {
+//           NEXT_FREE(bp) = NULL;
+//           PREV_FREE(bp) = NULL;
+//           free_listp = bp;
+//           return;
+//       }
+
+//       // Case 2: Insert before first block (bp has lowest address)
+//       if ((char *)bp < free_listp) {
+//           NEXT_FREE(bp) = free_listp;
+//           PREV_FREE(bp) = NULL;
+//           PREV_FREE(free_listp) = bp;
+//           free_listp = bp;
+//           return;
+//       }
+
+//       // Case 3: Find correct position in middle or end
+//       void *cur = free_listp;
+//       while (NEXT_FREE(cur) != NULL && NEXT_FREE(cur) < bp) {
+//           cur = NEXT_FREE(cur);
+//       }
+
+//       // Insert bp after cur
+//       NEXT_FREE(bp) = NEXT_FREE(cur);
+//       PREV_FREE(bp) = cur;
+//       if (NEXT_FREE(cur) != NULL) {
+//           PREV_FREE(NEXT_FREE(cur)) = bp;
+//       }
+//       NEXT_FREE(cur) = bp;
+//   }
+
 static void *coalesce(void *bp)
 {
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
@@ -230,9 +264,6 @@ int mm_init(void)
 static void *first_fit(size_t asize){
     void *cur = free_listp;
 
-
-
-
     while(cur != NULL){
 
         if(GET_SIZE(HDRP(cur)) >= asize){
@@ -273,6 +304,25 @@ static void *next_fit(size_t asize) {
 
     return NULL;  // No fit found
 }
+
+static void *best_fit(size_t asize)
+{
+    void *bp = free_listp;
+    void *best = NULL;
+
+    while (bp != NULL) {
+        size_t bsize = GET_SIZE(HDRP(bp));
+        if (asize <= bsize) {
+            if (best == NULL || bsize < GET_SIZE(HDRP(best)))
+                best = bp;
+            // optional small cutoff: if perfect fit, stop early
+            if (bsize == asize) break;
+        }
+        bp = NEXT_FREE(bp);
+    }
+    return best;
+}
+
 
 // free block을 할당하고, 필요하면 분할하는 함수
 static void place(void *bp, size_t asize){
@@ -322,7 +372,7 @@ void *mm_malloc(size_t size)
         asize = DSIZE * ((size + (DSIZE) + (DSIZE -1)) / DSIZE);
 
     // Search the free list for a fit
-    if ((bp = first_fit(asize)) != NULL) {
+    if ((bp = best_fit(asize)) != NULL) {
         place(bp, asize);
         return bp;
     }
