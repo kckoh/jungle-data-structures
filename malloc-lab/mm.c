@@ -75,7 +75,6 @@ team_t team = {
 #define NEXT_FREE(bp) (*(void **)bp)
 #define PREV_FREE(bp) (*(void **)((bp) + DSIZE))
 
-
 /* single word (4) or double word (8) alignment */
 #define ALIGNMENT 8
 
@@ -85,6 +84,9 @@ team_t team = {
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
 #define NUM_SIZE_CLASSES 9
+
+#define SET_NEXT_FREE(bp, val) (*(void **)(bp) = (val))
+#define SET_PREV_FREE(bp, val) (*(void **)((char *)(bp) + DSIZE) = (val))
 
 static void *free_lists[NUM_SIZE_CLASSES];
 
@@ -121,25 +123,34 @@ static void remove_from_free_list(void *bp){
     size_t bp_size = GET_SIZE(HDRP(bp));
 
     int size_class = get_size_class(bp_size);
-    void *head = free_lists[size_class];
+
+
+    // 이전, 다음 포인터 불러오기
+    void *prev = PREV_FREE(bp);
+    void *next = NEXT_FREE(bp);
 
 
 
-
-
-    if (PREV_FREE(head) == NULL) {
-        free_lists[size_class] = NEXT_FREE(bp);
+    if (prev == NULL) {
+        free_lists[size_class] = next;
     }
     // else bp's prev's next = bp next; 전에 있는 next 를 bp next로
-
     else {
-        NEXT_FREE(PREV_FREE(head)) = NEXT_FREE(head);
+        SET_NEXT_FREE(prev, next);
+        // NEXT_FREE(prev) = next;
     }
 
     // 그전에 있는 bp's next 의 prev = bp's prev 으로
-    if (NEXT_FREE(head) != NULL){
-        PREV_FREE(NEXT_FREE(head)) = PREV_FREE(head);
+    if (next != NULL){
+        SET_PREV_FREE(next, prev);
+        // PREV_FREE(next) = prev;
     }
+
+    SET_PREV_FREE(bp, NULL);
+    SET_NEXT_FREE(bp, NULL);
+
+    // PREV_FREE(bp) = NULL;
+    // NEXT_FREE(bp) = NULL;
 
 }
 
@@ -170,46 +181,12 @@ static void add_to_free_list(void *bp){
 }
 
 
-// static void add_to_free_list(void *bp){
-//       // Case 1: Empty list
-//       if (free_listp == NULL) {
-//           NEXT_FREE(bp) = NULL;
-//           PREV_FREE(bp) = NULL;
-//           free_listp = bp;
-//           return;
-//       }
-
-//       // Case 2: Insert before first block (bp has lowest address)
-//       if ((char *)bp < free_listp) {
-//           NEXT_FREE(bp) = free_listp;
-//           PREV_FREE(bp) = NULL;
-//           PREV_FREE(free_listp) = bp;
-//           free_listp = bp;
-//           return;
-//       }
-
-//       // Case 3: Find correct position in middle or end
-//       void *cur = free_listp;
-//       while (NEXT_FREE(cur) != NULL && NEXT_FREE(cur) < bp) {
-//           cur = NEXT_FREE(cur);
-//       }
-
-//       // Insert bp after cur
-//       NEXT_FREE(bp) = NEXT_FREE(cur);
-//       PREV_FREE(bp) = cur;
-//       if (NEXT_FREE(cur) != NULL) {
-//           PREV_FREE(NEXT_FREE(cur)) = bp;
-//       }
-//       NEXT_FREE(cur) = bp;
-//   }
-
 static void *coalesce(void *bp)
 {
+
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t size = GET_SIZE(HDRP(bp));
-
-
 
     // both prev and next are allocated
     if (prev_alloc && next_alloc) { /* Case 1 */
@@ -270,7 +247,6 @@ static void *extend_heap(size_t words){
    PUT(HDRP(bp), PACK(size, 0)); /* Free block header */
    PUT(FTRP(bp), PACK(size, 0)); /* Free block footer */
    PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1)); /* New epilogue header */
-
 
    /* Coalesce if the previous block was free */
    return coalesce(bp);
@@ -371,9 +347,35 @@ static void *next_fit(size_t asize) {
 //     return best;
 // }
 
+//first fit version
+static void *find_fit(size_t asize) {
+
+    // - Start at the size class for asize
+    // - First-fit search within that class
+    // - If not found, move to next larger size class
+    // - Repeat until found or exhausted all larger classes
+    int class = get_size_class(asize);
+
+    for (int i = class; i < NUM_SIZE_CLASSES; i++) {
+        void *bp = free_lists[i];
+        while(bp != NULL){
+            if(GET_SIZE(HDRP(bp)) >= asize){
+                return bp;
+            }
+            bp = NEXT_FREE(bp);
+        }
+    }
+
+    return NULL;
+}
 
 // free block을 할당하고, 필요하면 분할하는 함수
 static void place(void *bp, size_t asize){
+    // When splitting a block:
+    // - The remainder block might belong to a different size class
+    // - Remove original from old size class
+    // - Add remainder to appropriate size class based on its size
+
     size_t csize = GET_SIZE(HDRP(bp));
     remove_from_free_list(bp);
 
@@ -420,7 +422,7 @@ void *mm_malloc(size_t size)
         asize = DSIZE * ((size + (DSIZE) + (DSIZE -1)) / DSIZE);
 
     // Search the free list for a fit
-    if ((bp = first_fit(asize)) != NULL) {
+    if ((bp = find_fit(asize)) != NULL) {
         place(bp, asize);
         return bp;
     }
