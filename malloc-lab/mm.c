@@ -352,19 +352,51 @@ void mm_free(void *ptr)
 /*
  * mm_realloc - Implemented simply in terms of mm_malloc and mm_free
  */
-void *mm_realloc(void *ptr, size_t size)
-{
-    void *oldptr = ptr;
-    void *newptr;
-    size_t copySize;
+ void *mm_realloc(void *ptr, size_t size)
+ {
+     if (ptr == NULL) return mm_malloc(size);
+     if (size == 0) { mm_free(ptr); return NULL; }
 
-    newptr = mm_malloc(size);
-    if (newptr == NULL)
-      return NULL;
-    copySize = *(size_t *)((char *)oldptr - SIZE_T_SIZE);
-    if (size < copySize)
-      copySize = size;
-    memcpy(newptr, oldptr, copySize);
-    mm_free(oldptr);
-    return newptr;
-}
+     size_t oldsize = GET_SIZE(HDRP(ptr));
+     size_t asize = ALIGN(size + DSIZE); // include overhead + alignment
+
+     // 1️⃣ Shrink case → do nothing
+     if (asize <= oldsize) return ptr;
+
+     // 2️⃣ Try to extend forward (next block)
+     void *next = NEXT_BLKP(ptr);
+     if (!GET_ALLOC(HDRP(next)) && GET_SIZE(HDRP(next)) != 0) {
+         size_t next_size = GET_SIZE(HDRP(next));
+         if (oldsize + next_size >= asize) {
+             remove_from_free_list(next); // <- remove from free list
+             size_t new_size = oldsize + next_size;
+             PUT(HDRP(ptr), PACK(new_size, 1));
+             PUT(FTRP(ptr), PACK(new_size, 1));
+             return ptr; // success, no memcpy
+         }
+     }
+
+     // 3️⃣ Try to extend backward (previous free block)
+     void *prev = PREV_BLKP(ptr);
+     if (!GET_ALLOC(HDRP(prev)) && GET_SIZE(HDRP(prev)) != 0) {
+         size_t prev_size = GET_SIZE(HDRP(prev));
+         if (prev_size + oldsize >= asize) {
+             remove_from_free_list(prev);
+             size_t new_size = prev_size + oldsize;
+             PUT(HDRP(prev), PACK(new_size, 1));
+             PUT(FTRP(prev), PACK(new_size, 1));
+             memcpy(prev, ptr, oldsize - DSIZE); // small copy
+             return prev;
+         }
+     }
+
+     // 4️⃣ Otherwise, fallback: malloc → copy → free
+     void *newptr = mm_malloc(size);
+     if (newptr == NULL) return NULL;
+
+     size_t copySize = oldsize - DSIZE;
+     if (size < copySize) copySize = size;
+     memcpy(newptr, ptr, copySize);
+     mm_free(ptr);
+     return newptr;
+ }
