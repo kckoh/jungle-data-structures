@@ -48,6 +48,7 @@ team_t team = {
 // 분할 수 남은 block을 add_to_free_list추가
 // mm_free 수정 -> last_allocp 코드 삭제
 /* Basic constants and macros */
+
 #define WSIZE 4
 #define DSIZE 8
 #define CHUNKSIZE (1<<12)
@@ -72,7 +73,7 @@ team_t team = {
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
 
 #define NEXT_FREE(bp) (*(void **)bp)
-#define PREV_FREE(bp) (*(void **)((bp) + WSIZE))
+#define PREV_FREE(bp) (*(void **)((bp) + DSIZE))
 
 
 /* single word (4) or double word (8) alignment */
@@ -86,17 +87,20 @@ team_t team = {
 
 // pointer to the prologue block (starting block)
 static char *heap_listp = 0;
-
+static char *last_allocp;
 static char *free_listp;
 
 static void remove_from_free_list(void *bp){
     // if bp prev is null -> bp is the first element
     // bp is the first element
     // free_listp = bp's next
+    // printf("remove_from_free_list: %p, size=%zu\n", bp, GET_SIZE(HDRP(bp)));
+
     if (PREV_FREE(bp) == NULL) {
         free_listp = NEXT_FREE(bp);
     }
     // else bp's prev's next = bp next; 전에 있는 next 를 bp next로
+
     else {
         NEXT_FREE(PREV_FREE(bp)) = NEXT_FREE(bp);
     }
@@ -114,13 +118,13 @@ After:
 free_listp → [bp] ↔ [A] ↔ [B]
 */
 static void add_to_free_list(void *bp){
+
     NEXT_FREE(bp) = free_listp;
     PREV_FREE(bp) = NULL;
     if(free_listp != NULL){
         PREV_FREE(free_listp) = bp;
     }
     free_listp = bp;
-
 }
 
 static void *coalesce(void *bp)
@@ -128,6 +132,7 @@ static void *coalesce(void *bp)
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t size = GET_SIZE(HDRP(bp));
+
 
 
     // both prev and next are allocated
@@ -138,31 +143,37 @@ static void *coalesce(void *bp)
 
     // prev is allocated but next is free
     else if (prev_alloc && !next_alloc) { /* Case 2 */
-        remove_from_free_list(NEXT_FREE(bp));
+        remove_from_free_list(NEXT_BLKP(bp));
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
+
         PUT(HDRP(bp), PACK(size, 0));
         PUT(FTRP(bp), PACK(size, 0));
+
         add_to_free_list(bp);
     }
 
     // prev is free but next is allocated
     else if (!prev_alloc && next_alloc) { /* Case 3 */
-        add_to_free_list(PREV_FREE(bp));
+        remove_from_free_list(PREV_BLKP(bp));
         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
-        PUT(FTRP(bp), PACK(size, 0));
+
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
+        PUT(FTRP(PREV_BLKP(bp)), PACK(size, 0));  // ✓ PREV_BLKP 사용!
+
         bp = PREV_BLKP(bp);
         add_to_free_list(bp);
     }
 
     // prev and next are free
     else { /* Case 4 */
-
+        remove_from_free_list(NEXT_BLKP(bp));
+        remove_from_free_list(PREV_BLKP(bp));
         size += GET_SIZE(HDRP(PREV_BLKP(bp))) +
                 GET_SIZE(FTRP(NEXT_BLKP(bp)));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
         PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
         bp = PREV_BLKP(bp);
+        add_to_free_list(bp);
     }
 
     return bp;
@@ -217,16 +228,18 @@ int mm_init(void)
 }
 
 static void *first_fit(size_t asize){
-
-    // find the first pointer
     void *cur = free_listp;
 
+
+
+
     while(cur != NULL){
-        // not found
+
         if(GET_SIZE(HDRP(cur)) >= asize){
             return cur;
         }
         cur = NEXT_FREE(cur);
+
     }
 
     return NULL;
@@ -252,7 +265,7 @@ static void *next_fit(size_t asize) {
     while (bp != start) {
         if (GET_SIZE(HDRP(bp)) == 0) break;  // Hit epilogue again
         if (!GET_ALLOC(HDRP(bp)) && GET_SIZE(HDRP(bp)) >= asize) {
-            last_allocp = bp;
+            // last_allocp = bp;
             return bp;
         }
         bp = NEXT_BLKP(bp);
@@ -264,15 +277,21 @@ static void *next_fit(size_t asize) {
 // free block을 할당하고, 필요하면 분할하는 함수
 static void place(void *bp, size_t asize){
     size_t csize = GET_SIZE(HDRP(bp));
+    remove_from_free_list(bp);
 
 
-    if ((csize - asize) >= (2*DSIZE)) {  // Minimum block size
+    // 나머지 블록을 split한다
+    // Minimum free block: header(4) + next_ptr(8) + prev_ptr(8) + footer(4) = 24 bytes
+    if ((csize - asize) >= (3*DSIZE)) {
         PUT(HDRP(bp), PACK(asize, 1));
         PUT(FTRP(bp), PACK(asize, 1));
-        bp = NEXT_BLKP(bp);
-        PUT(HDRP(bp), PACK(csize-asize, 0));
-        PUT(FTRP(bp), PACK(csize-asize, 0));
+
+        void *next_bp = NEXT_BLKP(bp);
+        PUT(HDRP(next_bp), PACK(csize-asize, 0));
+        PUT(FTRP(next_bp), PACK(csize-asize, 0));
+        add_to_free_list(next_bp);
     }
+
     else {
         PUT(HDRP(bp), PACK(csize, 1));
         PUT(FTRP(bp), PACK(csize, 1));
@@ -326,10 +345,8 @@ void mm_free(void *ptr)
     size_t size = GET_SIZE(HDRP(ptr));
    PUT(HDRP(ptr), PACK(size, 0));
    PUT(FTRP(ptr), PACK(size, 0));
-   void *coalesced = coalesce(ptr);
+   coalesce(ptr);
 
-    // Update last_allocp to the coalesced block to maintain next-fit behavior
-    // last_allocp = coalesced;
 }
 
 /*
