@@ -275,10 +275,10 @@ int mm_init(void)
     PUT(heap_listp + (2*WSIZE), PACK(DSIZE, 1)); /* Prologue footer */
     PUT(heap_listp + (3*WSIZE), PACK(0, 1)); /* Epilogue header */
 
+    // POINTS to after Prologue footer
     heap_listp += (2*WSIZE);
 
-    // free_listp = NULL;
-
+    // extend_heap by CHUNKSIZE/WSIZE
     if (extend_heap(CHUNKSIZE/WSIZE) == NULL) return -1;
 
     return 0;
@@ -414,9 +414,9 @@ void *mm_malloc(size_t size)
     if (size == 0) return NULL;
 
     // Adjust block size to include overhead and alignment req
-    // size smaller than DSIZE requires at leanst 16 bytes (header 4 + footer 4 + payload 8)
-    if (size <= DSIZE)
-        asize = 2 * DSIZE;
+    // size smaller than DSIZE requires at leanst 16 bytes (header 4 + footer 4 + payload 16)
+    if (size <=DSIZE)
+        asize = 3 * DSIZE;
     // round to the multiple of 8
     else
         asize = DSIZE * ((size + (DSIZE) + (DSIZE -1)) / DSIZE);
@@ -439,9 +439,13 @@ void *mm_malloc(size_t size)
 
 /*
  * mm_free - Freeing a block does nothing.
+ * physical block is set; further action is done in coalesce
  */
 void mm_free(void *ptr)
 {
+    if (ptr == NULL) {
+        return;  // Standard behavior: free(NULL) does nothing
+    }
     size_t size = GET_SIZE(HDRP(ptr));
    PUT(HDRP(ptr), PACK(size, 0));
    PUT(FTRP(ptr), PACK(size, 0));
