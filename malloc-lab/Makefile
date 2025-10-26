@@ -13,6 +13,13 @@ OBJS = mdriver.o mm.o memlib.o fsecs.o fcyc.o clock.o ftimer.o
 mdriver: $(OBJS)
 	$(CC) $(CFLAGS) -o mdriver $(OBJS)
 
+test: test_malloc.o mm.o memlib.o
+	$(CC) $(CFLAGS) -o test test_malloc.o mm.o memlib.o
+
+test_malloc.o: test_malloc.c mm.h memlib.h
+	$(CC) $(CFLAGS) -c test_malloc.c
+
+
 mdriver.o: mdriver.c fsecs.h fcyc.h clock.h memlib.h config.h mm.h
 memlib.o: memlib.c memlib.h
 mm.o: mm.c mm.h memlib.h
@@ -26,3 +33,6 @@ handin:
 
 clean:
 	rm -f *~ *.o mdriver
+
+run: test
+	./test
