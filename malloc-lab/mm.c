@@ -83,28 +83,37 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
-#define NUM_SIZE_CLASSES 9
+
 
 #define SET_NEXT_FREE(bp, val) (*(void **)(bp) = (val))
 #define SET_PREV_FREE(bp, val) (*(void **)((char *)(bp) + DSIZE) = (val))
 
-static void *free_lists[NUM_SIZE_CLASSES];
+
 
 // pointer to the prologue block (starting block)
 static char *heap_listp = 0;
 static char *last_allocp;
 // static char *free_listp;
 
+#define NUM_SIZE_CLASSES 15
+static void *free_lists[NUM_SIZE_CLASSES];
+
 int get_size_class(size_t size) {
-    if (size <= 32)        return 0;
-    else if (size <= 64)   return 1;
-    else if (size <= 128)  return 2;
-    else if (size <= 256)  return 3;
-    else if (size <= 512)  return 4;
-    else if (size <= 1024) return 5;
-    else if (size <= 2048) return 6;
-    else if (size <= 4096) return 7;
-    else                   return 8;  // catch-all for very large blocks
+    if (size <= 16)        return 0;
+    else if (size <= 32)   return 1;
+    else if (size <= 48)   return 2;   // ← NEW for binary
+    else if (size <= 64)   return 3;
+    else if (size <= 80)   return 4;   // ← NEW intermediate
+    else if (size <= 96)   return 5;
+    else if (size <= 112)  return 6;   // ← NEW for binary
+    else if (size <= 128)  return 7;
+    else if (size <= 192)  return 8;
+    else if (size <= 256)  return 9;
+    else if (size <= 512)  return 10;
+    else if (size <= 1024) return 11;
+    else if (size <= 2048) return 12;
+    else if (size <= 4096) return 13;
+    else                   return 14;
 }
 
 
@@ -222,10 +231,11 @@ static void *coalesce(void *bp)
         remove_from_free_list(NEXT_BLKP(bp));
         remove_from_free_list(PREV_BLKP(bp));
         size += GET_SIZE(HDRP(PREV_BLKP(bp))) +
-                GET_SIZE(FTRP(NEXT_BLKP(bp)));
-        PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
-        PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
+                GET_SIZE(HDRP(NEXT_BLKP(bp)));
         bp = PREV_BLKP(bp);
+
+        PUT(HDRP(bp), PACK(size, 0));
+        PUT(FTRP(bp), PACK(size, 0));
         add_to_free_list(bp);
     }
 
