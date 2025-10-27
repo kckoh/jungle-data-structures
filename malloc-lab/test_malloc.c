@@ -1,4 +1,6 @@
-// test_malloc_v2.c - CLEANER VERSION
+// test_malloc.c
+// Comprehensive correctness suite for malloc lab allocators
+// Works with mm.c + memlib.c
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,32 +8,32 @@
 #include "mm.h"
 #include "memlib.h"
 
-// Test counter
+/* ==============================================================
+   Global counters and colors
+   ============================================================== */
 static int tests_run = 0;
 static int tests_passed = 0;
 
-// Color codes
-#define GREEN "\033[0;32m"
-#define RED "\033[0;31m"
+#define GREEN  "\033[0;32m"
+#define RED    "\033[0;31m"
 #define YELLOW "\033[0;33m"
-#define RESET "\033[0m"
+#define RESET  "\033[0m"
 
-// Enhanced test macros with automatic setup
-#define TEST_SETUP() \
-    do { \
-        mem_init(); \
-        mm_init(); \
-    } while(0)
+/* ==============================================================
+   Test macros
+   ============================================================== */
+#define TEST_SETUP()  \
+    do { mem_init(); mm_init(); } while(0)
 
 #define TEST(name) \
     printf("\n" YELLOW "TEST: %s" RESET "\n", name); \
     tests_run++; \
-    TEST_SETUP()  // ← Automatic setup!
+    TEST_SETUP();
 
-#define ASSERT(condition, message) \
+#define ASSERT(cond, msg) \
     do { \
-        if (!(condition)) { \
-            printf(RED "  ✗ FAIL: %s" RESET "\n", message); \
+        if (!(cond)) { \
+            printf(RED "  ✗ FAIL: %s" RESET "\n", msg); \
             return 0; \
         } \
     } while(0)
@@ -43,262 +45,189 @@ static int tests_passed = 0;
         return 1; \
     } while(0)
 
-// Helper
-int is_valid_pointer(void *ptr) {
-    return ptr != NULL && ((size_t)ptr % 8) == 0;
-}
+static int is_aligned(void *p) { return ((size_t)p % 8) == 0; }
 
-/* ========================================
-   TESTS - Now much simpler!
-======================================== */
-
+/* ==============================================================
+   Basic Tests
+   ============================================================== */
 int test_init() {
     TEST("Initialization");
-    // mem_init() and mm_init() already called by TEST macro!
+    PASS();
+}
+
+int test_malloc_zero() {
+    TEST("malloc(0) returns NULL");
+    void *p = mm_malloc(0);
+    ASSERT(p == NULL, "malloc(0) must return NULL");
     PASS();
 }
 
 int test_single_malloc() {
     TEST("Single malloc");
-    // Already initialized!
-
-    void *ptr = mm_malloc(64);
-    ASSERT(ptr != NULL, "malloc should return non-NULL pointer");
-    ASSERT(is_valid_pointer(ptr), "pointer should be 8-byte aligned");
-
+    void *p = mm_malloc(64);
+    ASSERT(p && is_aligned(p), "valid aligned ptr");
     PASS();
 }
 
 int test_multiple_malloc() {
     TEST("Multiple malloc");
-
-    void *ptr1 = mm_malloc(64);
-    void *ptr2 = mm_malloc(128);
-    void *ptr3 = mm_malloc(256);
-
-    ASSERT(ptr1 != NULL, "first malloc failed");
-    ASSERT(ptr2 != NULL, "second malloc failed");
-    ASSERT(ptr3 != NULL, "third malloc failed");
-
-    ASSERT(ptr1 != ptr2, "pointers should be different");
-    ASSERT(ptr2 != ptr3, "pointers should be different");
-    ASSERT(ptr1 != ptr3, "pointers should be different");
-
-    PASS();
-}
-
-int test_malloc_zero() {
-    TEST("Malloc with size 0");
-
-    void *ptr = mm_malloc(0);
-    printf("  → malloc(0) returned: %p\n", ptr);
-
+    void *a = mm_malloc(64);
+    void *b = mm_malloc(128);
+    void *c = mm_malloc(256);
+    ASSERT(a && b && c, "allocations succeeded");
+    ASSERT(a != b && b != c && a != c, "unique blocks");
     PASS();
 }
 
 int test_malloc_large() {
-    TEST("Large malloc");
-
-    void *ptr = mm_malloc(1024 * 1024); // 1 MB
-    ASSERT(ptr != NULL, "large malloc should succeed");
-    ASSERT(is_valid_pointer(ptr), "large pointer should be aligned");
-
+    TEST("Large malloc (1MB)");
+    void *p = mm_malloc(1 << 20);
+    ASSERT(p && is_aligned(p), "large allocation aligned");
     PASS();
 }
 
+/* ==============================================================
+   Free & Coalesce
+   ============================================================== */
 int test_malloc_free() {
-    TEST("Malloc and free");
-
-    void *ptr = mm_malloc(64);
-    ASSERT(ptr != NULL, "malloc failed");
-
-    mm_free(ptr);  // Should not crash
-
+    TEST("malloc + free");
+    void *p = mm_malloc(64);
+    ASSERT(p, "malloc failed");
+    mm_free(p);
     PASS();
 }
 
 int test_multiple_free() {
-    TEST("Multiple malloc and free");
-
-    void *ptr1 = mm_malloc(64);
-    void *ptr2 = mm_malloc(128);
-    void *ptr3 = mm_malloc(256);
-
-    mm_free(ptr2);
-    mm_free(ptr1);
-    mm_free(ptr3);
-
+    TEST("multiple malloc/free");
+    void *a = mm_malloc(64), *b = mm_malloc(128), *c = mm_malloc(256);
+    mm_free(b); mm_free(a); mm_free(c);
     PASS();
 }
 
 int test_free_null() {
-    TEST("Free NULL pointer");
-
-    mm_free(NULL);  // Should not crash
-
+    TEST("free(NULL)");
+    mm_free(NULL);
     PASS();
 }
 
-int test_malloc_after_free() {
-    TEST("Malloc after free (reuse)");
-
-    void *ptr1 = mm_malloc(64);
-    ASSERT(ptr1 != NULL, "first malloc failed");
-
-    mm_free(ptr1);
-
-    void *ptr2 = mm_malloc(64);
-    ASSERT(ptr2 != NULL, "malloc after free failed");
-
-    if (ptr1 == ptr2) {
-        printf("  → Block reused (optimal!)\n");
-    }
-
+int test_alternating_free_coalesce() {
+    TEST("alternating free coalescing");
+    void *blk[32];
+    for (int i=0;i<32;i++) blk[i]=mm_malloc(64);
+    for (int i=0;i<32;i+=2) mm_free(blk[i]);
+    for (int i=1;i<32;i+=2) mm_free(blk[i]); // should coalesce full region
+    void *big = mm_malloc(2048);
+    ASSERT(big != NULL, "coalesced large alloc failed");
     PASS();
 }
 
+/* ==============================================================
+   Data Integrity & Overlap
+   ============================================================== */
 int test_write_read() {
-    TEST("Write and read data");
-
-    int *ptr = (int *)mm_malloc(sizeof(int) * 10);
-    ASSERT(ptr != NULL, "malloc failed");
-
-    // Write
-    for (int i = 0; i < 10; i++) {
-        ptr[i] = i * 100;
-    }
-
-    // Read and verify
-    for (int i = 0; i < 10; i++) {
-        ASSERT(ptr[i] == i * 100, "data corruption detected");
-    }
-
-    mm_free(ptr);
-
+    TEST("write/read integrity");
+    int *p = mm_malloc(sizeof(int)*10);
+    ASSERT(p, "malloc failed");
+    for (int i=0;i<10;i++) p[i]=i*7;
+    for (int i=0;i<10;i++) ASSERT(p[i]==i*7,"data corrupted");
+    mm_free(p);
     PASS();
 }
 
-int test_no_overwrite() {
-    TEST("No overwrite between blocks");
-
-    int *arr1 = (int *)mm_malloc(sizeof(int) * 100);
-    int *arr2 = (int *)mm_malloc(sizeof(int) * 100);
-
-    ASSERT(arr1 != NULL && arr2 != NULL, "malloc failed");
-
-    // Fill first
-    for (int i = 0; i < 100; i++) {
-        arr1[i] = i;
-    }
-
-    // Fill second
-    for (int i = 0; i < 100; i++) {
-        arr2[i] = i * 2;
-    }
-
-    // Verify first not corrupted
-    for (int i = 0; i < 100; i++) {
-        ASSERT(arr1[i] == i, "arr1 was overwritten!");
-    }
-
-    // Verify second
-    for (int i = 0; i < 100; i++) {
-        ASSERT(arr2[i] == i * 2, "arr2 was corrupted!");
-    }
-
-    mm_free(arr1);
-    mm_free(arr2);
-
+int test_no_overlap() {
+    TEST("no overwrite between blocks");
+    int *a = mm_malloc(sizeof(int)*100);
+    int *b = mm_malloc(sizeof(int)*100);
+    for (int i=0;i<100;i++) a[i]=i;
+    for (int i=0;i<100;i++) b[i]=i*2;
+    for (int i=0;i<100;i++) ASSERT(a[i]==i,"arr1 corrupted");
+    for (int i=0;i<100;i++) ASSERT(b[i]==i*2,"arr2 corrupted");
+    mm_free(a); mm_free(b);
     PASS();
 }
 
-int test_coalesce_forward() {
-    TEST("Coalesce with next block");
-
-    void *ptr1 = mm_malloc(64);
-    void *ptr2 = mm_malloc(64);
-    void *ptr3 = mm_malloc(64);
-
-    mm_free(ptr2);
-    mm_free(ptr3);
-
-    void *ptr4 = mm_malloc(100);
-    ASSERT(ptr4 != NULL, "coalesced allocation failed");
-
+int test_payload_non_overlap_stress() {
+    TEST("payload overlap stress");
+    enum {N=200};
+    void* p[N];
+    for(int i=0;i<N;i++) p[i]=mm_malloc((i%5+1)*32);
+    for(int i=0;i<N;i++) ASSERT(p[i],"malloc fail");
+    for(int i=0;i<N;i++) memset(p[i],(char)(i&0xFF),8);
+    for(int i=0;i<N;i+=3) mm_free(p[i]);
+    for(int i=1;i<N;i+=2)
+        ASSERT(((unsigned char*)p[i])[0]==(unsigned char)(i&0xFF),
+               "payload overlap detected");
     PASS();
 }
 
+/* ==============================================================
+   Realloc
+   ============================================================== */
+int test_realloc_preserves_data() {
+    TEST("realloc preserves data");
+    size_t n=128;
+    unsigned char* p=mm_malloc(n);
+    ASSERT(p,"malloc fail");
+    for(size_t i=0;i<n;i++) p[i]=(unsigned char)(i^0xAA);
+    unsigned char* q=mm_realloc(p,n*4);
+    ASSERT(q,"realloc fail");
+    for(size_t i=0;i<n;i++)
+        ASSERT(q[i]==(unsigned char)(i^0xAA),"data corrupted after realloc");
+    mm_free(q);
+    PASS();
+}
+
+/* ==============================================================
+   Alignment
+   ============================================================== */
 int test_alignment() {
-    TEST("Alignment check");
-
-    size_t sizes[] = {1, 7, 13, 19, 31, 63, 127};
-
-    for (int i = 0; i < 7; i++) {
-        void *ptr = mm_malloc(sizes[i]);
-        ASSERT(ptr != NULL, "malloc failed");
-        ASSERT(((size_t)ptr % 8) == 0, "pointer not 8-byte aligned");
-        mm_free(ptr);
+    TEST("alignment check");
+    size_t s[]={1,7,13,19,31,63,127};
+    for(int i=0;i<7;i++){
+        void* p=mm_malloc(s[i]);
+        ASSERT(p && is_aligned(p),"alignment fail");
+        mm_free(p);
     }
-
     PASS();
 }
 
-/* ========================================
-   MAIN
-======================================== */
-
+/* ==============================================================
+   Summary
+   ============================================================== */
 int main() {
-    printf("\n");
-    printf("╔════════════════════════════════════════╗\n");
-    printf("║   Segregated Free List - Unit Tests   ║\n");
-    printf("╔════════════════════════════════════════╗\n");
+    printf("\n╔════════════════════════════════════════╗\n");
+    printf(  "║      Segregated List Unit Tests        ║\n");
+    printf(  "╚════════════════════════════════════════╝\n");
 
-    // Basic tests
-    printf("\n" YELLOW "━━━ CATEGORY 1: Basic Functionality ━━━" RESET "\n");
     test_init();
+    test_malloc_zero();
     test_single_malloc();
     test_multiple_malloc();
-    test_malloc_zero();
     test_malloc_large();
 
-    // Free tests
-    printf("\n" YELLOW "━━━ CATEGORY 2: Free Operations ━━━" RESET "\n");
     test_malloc_free();
     test_multiple_free();
     test_free_null();
+    test_alternating_free_coalesce();
 
-    // Reuse tests
-    printf("\n" YELLOW "━━━ CATEGORY 3: Reuse ━━━" RESET "\n");
-    test_malloc_after_free();
-
-    // Data integrity
-    printf("\n" YELLOW "━━━ CATEGORY 4: Data Integrity ━━━" RESET "\n");
     test_write_read();
-    test_no_overwrite();
+    test_no_overlap();
+    test_payload_non_overlap_stress();
 
-    // Coalescing
-    printf("\n" YELLOW "━━━ CATEGORY 5: Coalescing ━━━" RESET "\n");
-    test_coalesce_forward();
-
-    // Edge cases
-    printf("\n" YELLOW "━━━ CATEGORY 6: Edge Cases ━━━" RESET "\n");
+    test_realloc_preserves_data();
     test_alignment();
 
-    // Summary
-    printf("\n");
-    printf("╔════════════════════════════════════════╗\n");
-    printf("║            TEST SUMMARY                ║\n");
-    printf("╠════════════════════════════════════════╣\n");
-    printf("║  Total Tests:  %3d                     ║\n", tests_run);
-    printf("║  Passed:       %3d                     ║\n", tests_passed);
-    printf("║  Failed:       %3d                     ║\n", tests_run - tests_passed);
-    printf("╚════════════════════════════════════════╝\n");
+    printf("\n╔════════════════════════════════════════╗\n");
+    printf(  "║              TEST SUMMARY              ║\n");
+    printf(  "╠════════════════════════════════════════╣\n");
+    printf(  "║  Total:  %3d    Passed: %3d  Failed: %3d ║\n",
+            tests_run, tests_passed, tests_run-tests_passed);
+    printf(  "╚════════════════════════════════════════╝\n");
 
-    if (tests_passed == tests_run) {
-        printf("\n" GREEN "★ ALL TESTS PASSED! ★" RESET "\n\n");
-        return 0;
-    } else {
-        printf("\n" RED "✗ SOME TESTS FAILED" RESET "\n\n");
-        return 1;
-    }
+    if (tests_passed==tests_run)
+        printf(GREEN "\n★ ALL TESTS PASSED ★\n\n" RESET);
+    else
+        printf(RED "\n✗ SOME TESTS FAILED\n\n" RESET);
+
+    return (tests_passed==tests_run)?0:1;
 }

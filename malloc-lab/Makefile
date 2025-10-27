@@ -34,5 +34,8 @@ handin:
 clean:
 	rm -f *~ *.o mdriver
 
+score: mdriver
+	./mdriver -V
+
 run: test
 	./test
