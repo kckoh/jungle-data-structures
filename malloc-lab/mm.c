@@ -51,7 +51,7 @@ team_t team = {
 
 #define WSIZE 4
 #define DSIZE 8
-#define CHUNKSIZE (1<<12)
+#define CHUNKSIZE (1<<10)
 
 #define MAX(x,y) ((x) > (y)? (x) : (y))
 
@@ -276,6 +276,7 @@ static void *extend_heap(size_t words){
    PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1)); /* New epilogue header */
 
    /* Coalesce if the previous block was free */
+   // return bp;
    return coalesce(bp);
 }
 
@@ -306,7 +307,7 @@ int mm_init(void)
     heap_listp += (2*WSIZE);
 
     // extend_heap by CHUNKSIZE/WSIZE
-    if (extend_heap(CHUNKSIZE/WSIZE) == NULL) return -1;
+    if (extend_heap(CHUNKSIZE) == NULL) return -1;
 
     return 0;
 }
@@ -432,39 +433,51 @@ static void place(void *bp, size_t asize){
  * mm_malloc - Allocate a block by incrementing the brk pointer.
  *     Always allocate a block whose size is a multiple of the alignment.
  */
-void *mm_malloc(size_t size)
-{
-    size_t asize; // adjusted block size
-    size_t extendsize; // amount to extend heap if no fit
-    char *bp;
+ void *mm_malloc(size_t size)
+ {
+     size_t asize;
+     size_t extendsize;
+     char *bp;
 
-    // ignore requests
-    if (size == 0) return NULL;
+     if (size == 0) return NULL;
 
-    // Adjust block size to include overhead and alignment req
-    // size smaller than DSIZE requires at leanst 16 bytes (header 4 + footer 4 + payload 16)
-    if (size <=DSIZE)
-        // 16B
-        asize = MIN_BLOCK_SIZE;
-    // round to the multiple of 8
-    else
-        asize = DSIZE * ((size + (DSIZE) + (DSIZE -1)) / DSIZE);
+     // Adjust block size
+     if (size <= DSIZE)
+         asize = MIN_BLOCK_SIZE;
+     else
+         asize = DSIZE * ((size + (DSIZE) + (DSIZE - 1)) / DSIZE);
 
-    // Search the free list for a fit
-    if ((bp = find_fit(asize)) != NULL) {
-        place(bp, asize);
-        return bp;
-    }
+     // Search the free list for a fit
+     if ((bp = find_fit(asize)) != NULL) {
+         place(bp, asize);
+         return bp;
+     }
 
-    // no fit found. Get more memory and place the block
-    extendsize = MAX(asize, CHUNKSIZE);
-    if ((bp = extend_heap(extendsize/WSIZE)) == NULL)
-        return NULL;
+     // ===== ADAPTIVE EXTENSION (여기서 수정!) =====
+     // No fit found. Calculate smart extension size
 
-    place(bp, asize);
 
-    return bp;
-}
+     if (asize < CHUNKSIZE) {
+         // Small allocation: use base chunk
+         extendsize = CHUNKSIZE;
+     }
+     else if (asize < CHUNKSIZE * 4) {
+         // Medium allocation: add buffer
+         extendsize = asize + CHUNKSIZE / 4;
+     }
+     else {
+         // Large allocation: add 25% buffer
+         extendsize = asize + (asize / 24);
+     }
+
+     // ===== END ADAPTIVE =====
+
+     if ((bp = extend_heap(extendsize / WSIZE)) == NULL)
+         return NULL;
+
+     place(bp, asize);
+     return bp;
+ }
 
 /*
  * mm_free - Freeing a block does nothing.
