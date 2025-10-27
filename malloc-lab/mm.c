@@ -83,11 +83,10 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
-
-
 #define SET_NEXT_FREE(bp, val) (*(void **)(bp) = (val))
 #define SET_PREV_FREE(bp, val) (*(void **)((char *)(bp) + DSIZE) = (val))
 
+#define MIN_BLOCK_SIZE (2 * DSIZE)
 
 
 // pointer to the prologue block (starting block)
@@ -133,33 +132,48 @@ static void remove_from_free_list(void *bp){
 
     int size_class = get_size_class(bp_size);
 
+    // HANDLE size class 0 = 16 bytes; it uses single linkedlist.
+    if (size_class == 0){
+        void *prev = NULL;
+            void *cur = free_lists[0];
+            while (cur != NULL) {
+                if (cur == bp) {
+                    if (prev == NULL) {
+                        free_lists[0] = NEXT_FREE(bp);
+                    } else {
+                        SET_NEXT_FREE(prev, NEXT_FREE(bp));
+                    }
+                    return;
+                }
+                prev = cur;
+                cur = NEXT_FREE(cur);
+            }
 
+    }
+
+    else{
     // 이전, 다음 포인터 불러오기
-    void *prev = PREV_FREE(bp);
-    void *next = NEXT_FREE(bp);
+        void *prev = PREV_FREE(bp);
+        void *next = NEXT_FREE(bp);
 
+        if (prev == NULL) {
+            free_lists[size_class] = next;
+        }
+        // else bp's prev's next = bp next; 전에 있는 next 를 bp next로
+        else {
+            SET_NEXT_FREE(prev, next);
+            // NEXT_FREE(prev) = next;
+        }
 
-
-    if (prev == NULL) {
-        free_lists[size_class] = next;
-    }
-    // else bp's prev's next = bp next; 전에 있는 next 를 bp next로
-    else {
-        SET_NEXT_FREE(prev, next);
-        // NEXT_FREE(prev) = next;
-    }
-
-    // 그전에 있는 bp's next 의 prev = bp's prev 으로
-    if (next != NULL){
-        SET_PREV_FREE(next, prev);
-        // PREV_FREE(next) = prev;
+        // 그전에 있는 bp's next 의 prev = bp's prev 으로
+        if (next != NULL){
+            SET_PREV_FREE(next, prev);
+            // PREV_FREE(next) = prev;
+        }
     }
 
     SET_PREV_FREE(bp, NULL);
     SET_NEXT_FREE(bp, NULL);
-
-    // PREV_FREE(bp) = NULL;
-    // NEXT_FREE(bp) = NULL;
 
 }
 
@@ -175,17 +189,20 @@ static void add_to_free_list(void *bp){
     // - Insert into that specific list (LIFO is fine within each class)
 
     int class = get_size_class(GET_SIZE(HDRP(bp)));
-
     void *head = free_lists[class];
 
-    NEXT_FREE(bp) = head;
-    PREV_FREE(bp) = NULL;
-    if(head != NULL){
-        PREV_FREE(head) = bp;
+    if (class == 0){
+        SET_NEXT_FREE(bp, head);
     }
-    free_lists[class] = bp;
+    else {
+        NEXT_FREE(bp) = head;
+        PREV_FREE(bp) = NULL;
+        if(head != NULL){
+            PREV_FREE(head) = bp;
+        }
+    }
 
-    // free_lists[size]
+    free_lists[class] = bp;
 
 }
 
@@ -359,24 +376,25 @@ static void *next_fit(size_t asize) {
 
 //first fit version
 static void *find_fit(size_t asize) {
-
-    // - Start at the size class for asize
-    // - First-fit search within that class
-    // - If not found, move to next larger size class
-    // - Repeat until found or exhausted all larger classes
     int class = get_size_class(asize);
+    void *best = NULL;
 
     for (int i = class; i < NUM_SIZE_CLASSES; i++) {
         void *bp = free_lists[i];
-        while(bp != NULL){
-            if(GET_SIZE(HDRP(bp)) >= asize){
-                return bp;
+
+        while (bp != NULL) {
+            size_t bsize = GET_SIZE(HDRP(bp));
+            if (asize <= bsize) {
+                if (best == NULL || bsize < GET_SIZE(HDRP(best))) {
+                    best = bp;
+                }
+                if (bsize == asize) return bp;  // Perfect fit, stop immediately
             }
             bp = NEXT_FREE(bp);
         }
     }
 
-    return NULL;
+    return best;  // ✓ Return best fit found across all size classes
 }
 
 // free block을 할당하고, 필요하면 분할하는 함수
@@ -392,7 +410,7 @@ static void place(void *bp, size_t asize){
 
     // 나머지 블록을 split한다
     // Minimum free block: header(4) + next_ptr(8) + prev_ptr(8) + footer(4) = 24 bytes
-    if ((csize - asize) >= (3*DSIZE)) {
+    if ((csize - asize) > (MIN_BLOCK_SIZE)) {
         PUT(HDRP(bp), PACK(asize, 1));
         PUT(FTRP(bp), PACK(asize, 1));
 
@@ -426,7 +444,8 @@ void *mm_malloc(size_t size)
     // Adjust block size to include overhead and alignment req
     // size smaller than DSIZE requires at leanst 16 bytes (header 4 + footer 4 + payload 16)
     if (size <=DSIZE)
-        asize = 3 * DSIZE;
+        // 16B
+        asize = MIN_BLOCK_SIZE;
     // round to the multiple of 8
     else
         asize = DSIZE * ((size + (DSIZE) + (DSIZE -1)) / DSIZE);
