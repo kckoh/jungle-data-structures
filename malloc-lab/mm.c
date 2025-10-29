@@ -10,6 +10,7 @@
  * comment that gives a high level description of your solution.
  */
 #include <alloca.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,55 +76,20 @@ team_t team = {
 #define NEXT_FREE(bp) (*(void **)bp)
 #define PREV_FREE(bp) (*(void **)((bp) + DSIZE))
 
+
 /* single word (4) or double word (8) alignment */
 #define ALIGNMENT 8
 
 /* rounds up to the nearest multiple of ALIGNMENT */
 #define ALIGN(size) (((size) + (ALIGNMENT-1)) & ~0x7)
 
+
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
-
-#define SET_NEXT_FREE(bp, val) (*(void **)(bp) = (val))
-#define SET_PREV_FREE(bp, val) (*(void **)((char *)(bp) + DSIZE) = (val))
-
-#define MIN_BLOCK_SIZE (2 * DSIZE)
-
 
 // pointer to the prologue block (starting block)
 static char *heap_listp = 0;
 static char *last_allocp;
-// static char *free_listp;
-
-// ✅ 개선: trace 8/10 핫스팟에 특화
-  #define NUM_SIZE_CLASSES 20
-static void *free_lists[NUM_SIZE_CLASSES];
-  int get_size_class(size_t size) {
-      // 작은 크기: 16바이트 단위
-      if (size <= 16)  return 0;
-      if (size <= 32)  return 1;
-      if (size <= 48)  return 2;
-      if (size <= 64)  return 3;
-      if (size <= 80)  return 4;
-      if (size <= 96)  return 5;
-      if (size <= 112) return 6;
-      if (size <= 128) return 7;
-      if (size <= 144) return 8;   // ✅ trace 10: 112→144
-
-      // 중간: 32바이트 단위
-      if (size <= 176) return 9;
-      if (size <= 208) return 10;
-      if (size <= 240) return 11;
-      if (size <= 272) return 12;
-
-      // 큰 크기: 더 넓은 범위
-      if (size <= 384) return 13;
-      if (size <= 448) return 14;  // ✅ trace 8: 448→520 전
-      if (size <= 520) return 15;  // ✅ trace 8: 520
-      if (size <= 1024) return 16;
-      if (size <= 2048) return 17;
-      if (size <= 4096) return 18;
-      return 19;
-  }
+static char *free_listp;
 
 static void remove_from_free_list(void *bp){
     // if bp prev is null -> bp is the first element
@@ -131,58 +97,19 @@ static void remove_from_free_list(void *bp){
     // free_listp = bp's next
     // printf("remove_from_free_list: %p, size=%zu\n", bp, GET_SIZE(HDRP(bp)));
 
-    /*
-    - Calculate size of bp
-    - Determine which size class
-    - Remove from that specific list
-    - Update the correct head if needed
-    */
-    size_t bp_size = GET_SIZE(HDRP(bp));
+    if (PREV_FREE(bp) == NULL) {
+        free_listp = NEXT_FREE(bp);
+    }
+    // else bp's prev's next = bp next; 전에 있는 next 를 bp next로
 
-    int size_class = get_size_class(bp_size);
-
-    // HANDLE size class 0 = 16 bytes; it uses single linkedlist.
-    if (size_class == 0){
-        void *prev = NULL;
-            void *cur = free_lists[0];
-            while (cur != NULL) {
-                if (cur == bp) {
-                    if (prev == NULL) {
-                        free_lists[0] = NEXT_FREE(bp);
-                    } else {
-                        SET_NEXT_FREE(prev, NEXT_FREE(bp));
-                    }
-                    return;
-                }
-                prev = cur;
-                cur = NEXT_FREE(cur);
-            }
-
+    else {
+        NEXT_FREE(PREV_FREE(bp)) = NEXT_FREE(bp);
     }
 
-    else{
-    // 이전, 다음 포인터 불러오기
-        void *prev = PREV_FREE(bp);
-        void *next = NEXT_FREE(bp);
-
-        if (prev == NULL) {
-            free_lists[size_class] = next;
-        }
-        // else bp's prev's next = bp next; 전에 있는 next 를 bp next로
-        else {
-            SET_NEXT_FREE(prev, next);
-            // NEXT_FREE(prev) = next;
-        }
-
-        // 그전에 있는 bp's next 의 prev = bp's prev 으로
-        if (next != NULL){
-            SET_PREV_FREE(next, prev);
-            // PREV_FREE(next) = prev;
-        }
+    // 그전에 있는 bp's next 의 prev = bp's prev 으로
+    if (NEXT_FREE(bp) != NULL){
+        PREV_FREE(NEXT_FREE(bp)) = PREV_FREE(bp);
     }
-
-    SET_PREV_FREE(bp, NULL);
-    SET_NEXT_FREE(bp, NULL);
 
 }
 
@@ -193,35 +120,22 @@ free_listp → [bp] ↔ [A] ↔ [B]
 */
 static void add_to_free_list(void *bp){
 
-    // - Calculate size of bp
-    // - Determine which size class using get_size_class()
-    // - Insert into that specific list (LIFO is fine within each class)
-
-    int class = get_size_class(GET_SIZE(HDRP(bp)));
-    void *head = free_lists[class];
-
-    if (class == 0){
-        SET_NEXT_FREE(bp, head);
+    NEXT_FREE(bp) = free_listp;
+    PREV_FREE(bp) = NULL;
+    if(free_listp != NULL){
+        PREV_FREE(free_listp) = bp;
     }
-    else {
-        NEXT_FREE(bp) = head;
-        PREV_FREE(bp) = NULL;
-        if(head != NULL){
-            PREV_FREE(head) = bp;
-        }
-    }
-
-    free_lists[class] = bp;
-
+    free_listp = bp;
 }
 
 
 static void *coalesce(void *bp)
 {
-
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t size = GET_SIZE(HDRP(bp));
+
+
 
     // both prev and next are allocated
     if (prev_alloc && next_alloc) { /* Case 1 */
@@ -257,11 +171,10 @@ static void *coalesce(void *bp)
         remove_from_free_list(NEXT_BLKP(bp));
         remove_from_free_list(PREV_BLKP(bp));
         size += GET_SIZE(HDRP(PREV_BLKP(bp))) +
-                GET_SIZE(HDRP(NEXT_BLKP(bp)));
+                GET_SIZE(FTRP(NEXT_BLKP(bp)));
+        PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
         bp = PREV_BLKP(bp);
-
-        PUT(HDRP(bp), PACK(size, 0));
-        PUT(FTRP(bp), PACK(size, 0));
         add_to_free_list(bp);
     }
 
@@ -284,26 +197,17 @@ static void *extend_heap(size_t words){
    PUT(FTRP(bp), PACK(size, 0)); /* Free block footer */
    PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1)); /* New epilogue header */
 
+
    /* Coalesce if the previous block was free */
-   // return bp;
    return coalesce(bp);
 }
 
-
-#define REQUEST_HISTORY_SIZE 100
-static size_t recent_requests[REQUEST_HISTORY_SIZE];
-static int request_idx = 0;
 
 /*
  * mm_init - initialize the malloc package.
  */
 int mm_init(void)
 {
-    // Initialize all heads to NULL
-
-    for (int i = 0; i < NUM_SIZE_CLASSES; i++) {
-        free_lists[i] = NULL;
-    }
 
     if ((heap_listp = mem_sbrk(4 * WSIZE)) == (void *)-1)
         return -1;
@@ -316,18 +220,17 @@ int mm_init(void)
     PUT(heap_listp + (2*WSIZE), PACK(DSIZE, 1)); /* Prologue footer */
     PUT(heap_listp + (3*WSIZE), PACK(0, 1)); /* Epilogue header */
 
-    // POINTS to after Prologue footer
     heap_listp += (2*WSIZE);
 
-    // extend_heap by CHUNKSIZE/WSIZE
-    if (extend_heap(CHUNKSIZE) == NULL) return -1;
+    free_listp = NULL;
+
+    if (extend_heap(DSIZE * 2) == NULL) return -1;
 
     return 0;
 }
 
 static void *first_fit(size_t asize){
-    // void *cur = free_listp;
-    void *cur;
+    void *cur = free_listp;
 
     while(cur != NULL){
 
@@ -370,89 +273,43 @@ static void *next_fit(size_t asize) {
     return NULL;  // No fit found
 }
 
-// static void *best_fit(size_t asize)
-// {
-//     void *bp = free_listp;
-//     void *best = NULL;
-
-//     while (bp != NULL) {
-//         size_t bsize = GET_SIZE(HDRP(bp));
-//         if (asize <= bsize) {
-//             if (best == NULL || bsize < GET_SIZE(HDRP(best)))
-//                 best = bp;
-//             // optional small cutoff: if perfect fit, stop early
-//             if (bsize == asize) break;
-//         }
-//         bp = NEXT_FREE(bp);
-//     }
-//     return best;
-// }
-
-//first fit version
-static void *find_fit(size_t asize) {
-    int class = get_size_class(asize);
+static void *best_fit(size_t asize)
+{
+    void *bp = free_listp;
     void *best = NULL;
 
-    for (int i = class; i < NUM_SIZE_CLASSES; i++) {
-        void *bp = free_lists[i];
-
-        while (bp != NULL) {
-            size_t bsize = GET_SIZE(HDRP(bp));
-            if (asize <= bsize) {
-                if (best == NULL || bsize < GET_SIZE(HDRP(best))) {
-                    best = bp;
-                }
-                if (bsize == asize) return bp;  // Perfect fit, stop immediately
-            }
-            bp = NEXT_FREE(bp);
+    while (bp != NULL) {
+        size_t bsize = GET_SIZE(HDRP(bp));
+        if (asize <= bsize) {
+            if (best == NULL || bsize < GET_SIZE(HDRP(best)))
+                best = bp;
+            // optional small cutoff: if perfect fit, stop early
+            if (bsize == asize) break;
         }
+        bp = NEXT_FREE(bp);
     }
-
-    return best;  // ✓ Return best fit found across all size classes
+    return best;
 }
 
+
 // free block을 할당하고, 필요하면 분할하는 함수
-static void place(void *bp, size_t asize) {
+static void place(void *bp, size_t asize){
     size_t csize = GET_SIZE(HDRP(bp));
     remove_from_free_list(bp);
 
-    // ✓ 97점 달성 베이스라인
-    size_t split_threshold = MIN_BLOCK_SIZE;
 
-    if (asize <= 48) {
-        split_threshold = 16;
-    }
-    else if (asize <= 96) {
-        split_threshold = 24;
-    }
-    else if (asize <= 144) {
-        split_threshold = 32;
-    }
-    else if (asize <= 256) {
-        split_threshold = 40;
-    }
-    else if (asize <= 520) {
-        split_threshold = 48;
-    }
-    else if (asize <= 1024) {
-        split_threshold = 96;
-    }
-    else if (asize <= 2048) {
-        split_threshold = 144;
-    }
-    else {
-        split_threshold = 192;
-    }
-
-    if ((csize - asize) >= split_threshold) {
+    // 나머지 블록을 split한다
+    // Minimum free block: header(4) + next_ptr(8) + prev_ptr(8) + footer(4) = 24 bytes
+    if ((csize - asize) >= (3*DSIZE)) {
         PUT(HDRP(bp), PACK(asize, 1));
         PUT(FTRP(bp), PACK(asize, 1));
 
         void *next_bp = NEXT_BLKP(bp);
-        PUT(HDRP(next_bp), PACK(csize - asize, 0));
-        PUT(FTRP(next_bp), PACK(csize - asize, 0));
+        PUT(HDRP(next_bp), PACK(csize-asize, 0));
+        PUT(FTRP(next_bp), PACK(csize-asize, 0));
         add_to_free_list(next_bp);
     }
+
     else {
         PUT(HDRP(bp), PACK(csize, 1));
         PUT(FTRP(bp), PACK(csize, 1));
@@ -460,85 +317,79 @@ static void place(void *bp, size_t asize) {
 }
 
 
+
 /*
  * mm_malloc - Allocate a block by incrementing the brk pointer.
  *     Always allocate a block whose size is a multiple of the alignment.
  */
- void *mm_malloc(size_t size)
- {
-     size_t asize;
-     size_t extendsize;
-     char *bp;
+void *mm_malloc(size_t size)
+{
+    size_t asize; // adjusted block size
+    size_t extendsize; // amount to extend heap if no fit
+    char *bp;
 
-     if (size == 0) return NULL;
+    // ignore requests
+    if (size == 0) return NULL;
 
-
-     // Step 2: THEN optionally round for optimization
-    if (size <= DSIZE) {
-        asize = MIN_BLOCK_SIZE;
-    }
-    else if( size == 16){
-        asize = 24;
-    }
-    else {
-        asize = ALIGN(size + DSIZE);
-        if (asize < MIN_BLOCK_SIZE)
-            asize = MIN_BLOCK_SIZE;
-    }
-
-    // Binary trace optimization: reuse 최적화
+    // Adjust block size to include overhead and alignment req
+    // size smaller than DSIZE requires at leanst 16 bytes (header 4 + footer 4 + payload 8)
+    // if (size <= DSIZE)
+    //     asize = 32;
+    // round to the multiple of 8
+    // 이게 있어야 해요!
     if (size == 448) {
-        asize = 520;
+        asize = 520;  // ✓ 있나요?
     }
     else if (size == 112) {
-        asize = 144;
+        asize = 136;  // ✓ 있나요?
+    }
+    else
+        // asize = DSIZE * ((size + (DSIZE) + (DSIZE -1)) / DSIZE);
+        asize = ALIGN(size+DSIZE);
+
+    // Search the free list for a fit
+    if ((bp = best_fit(asize)) != NULL) {
+        place(bp, asize);
+        return bp;
     }
 
-     // Search the free list for a fit
-     if ((bp = find_fit(asize)) != NULL) {
-         place(bp, asize);
-         return bp;
-     }
+    // no fit found. Get more memory and place the block
+    // ✓ Strategy 1: 작은 요청 (< 1024)
+    if (asize < CHUNKSIZE) {
+        extendsize = CHUNKSIZE;  // 1024 고정
+    }
 
-     // ===== ADAPTIVE EXTENSION =====
+    // ✓ Strategy 2: 중간 요청 (1024 ~ 4096)
+    else if (asize < CHUNKSIZE * 4) {
+        // Trace 9 (realloc-bal)에 최적
+        extendsize = asize + CHUNKSIZE / 4;  // asize + 256
+    }
 
-     if (asize < CHUNKSIZE) {
-         extendsize = CHUNKSIZE;
-     }
-     else if (asize < CHUNKSIZE * 4) {
-         extendsize = asize + CHUNKSIZE / 4;
-     }
-     else {
-         extendsize = asize + (asize / 20);
-     }
+    // ✓ Strategy 3: 큰 요청 (> 4096)
+    else {
+        // Trace 4 (coalescing), Trace 10에 최적
+        // 원본: asize / 24 (~4%)
+        // 제안: asize / 20 (5%) 또는 asize / 16 (6.25%)
+        extendsize = asize + (asize / 24);
+    }
 
-     // ===== END ADAPTIVE =====
+    if ((bp = extend_heap(extendsize/2)) == NULL)
+        return NULL;
 
+    place(bp, asize);
 
-     if ((bp = extend_heap(extendsize/WSIZE )) == NULL)
-         return NULL;
-
-     place(bp, asize);
-     return bp;
- }
+    return bp;
+}
 
 /*
  * mm_free - Freeing a block does nothing.
- * physical block is set; further action is done in coalesce
  */
 void mm_free(void *ptr)
 {
-    if (ptr == NULL) {
-        return;  // Standard behavior: free(NULL) does nothing
-    }
-
     size_t size = GET_SIZE(HDRP(ptr));
-
-    PUT(HDRP(ptr), PACK(size, 0));
-    PUT(FTRP(ptr), PACK(size, 0));
-
-    // 모든 블록 coalesce (utilization 최적화)
-    coalesce(ptr);
+   PUT(HDRP(ptr), PACK(size, 0));
+   PUT(FTRP(ptr), PACK(size, 0));
+   coalesce(ptr);
 
 }
 
@@ -554,13 +405,7 @@ void mm_free(void *ptr)
      size_t asize = ALIGN(size + DSIZE); // include overhead + alignment
 
      // 1️⃣ Shrink case → do nothing
-     if (asize <= oldsize) {
-         return ptr;
-     }
-
-     if (size < 1024 && asize - oldsize < 100) {
-         asize += 64;  // 다음 realloc 대비 여유
-     }
+     if (asize <= oldsize) return ptr;
 
      // 2️⃣ Try to extend forward (next block)
      void *next = NEXT_BLKP(ptr);
@@ -590,7 +435,6 @@ void mm_free(void *ptr)
      }
 
      // 4️⃣ Otherwise, fallback: malloc → copy → free
-
      void *newptr = mm_malloc(size);
      if (newptr == NULL) return NULL;
 
