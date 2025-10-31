@@ -14,7 +14,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+// #include <assert.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -368,8 +368,6 @@ void *mm_malloc(size_t size)
     // ✓ Strategy 3: 큰 요청 (> 4096)
     else {
         // Trace 4 (coalescing), Trace 10에 최적
-        // 원본: asize / 24 (~4%)
-        // 제안: asize / 20 (5%) 또는 asize / 16 (6.25%)
         extendsize = asize + (asize / 24);
     }
 
