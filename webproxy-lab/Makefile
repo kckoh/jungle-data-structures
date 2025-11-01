@@ -1,4 +1,4 @@
-# Makefile for Proxy Lab 
+# Makefile for Proxy Lab
 #
 # You may modify this file any way you like (except for the handin
 # rule). You instructor will type "make" on your specific Makefile to
@@ -10,6 +10,8 @@ LDFLAGS = -lpthread
 
 all: proxy
 
+test: webserver.c
+	gcc webserver.c && ./a.out
 csapp.o: csapp.c csapp.h
 	$(CC) $(CFLAGS) -c csapp.c
 
@@ -26,4 +28,3 @@ handin:
 
 clean:
 	rm -f *~ *.o proxy core *.tar *.zip *.gzip *.bzip *.gz
-
