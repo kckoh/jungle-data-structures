@@ -1,3 +1,4 @@
+#include "csapp.h"
 #include <_string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -99,6 +100,8 @@ int main() {
 
         // strcp(output,buffer);
         char request[BUFFER_SIZE];
+        // response 버퍼안에다가 넣는다
+        char response[BUFFER_SIZE];
 
             if (valread > 0) {
                 printf("Client says:\n%s\n", buffer);
@@ -108,18 +111,77 @@ int main() {
                 char *token;
                 char *buffer_ptr = buffer;
 
+                // reads the client request
+                int is_first_line = 1;
                 while ((token = strsep(&buffer_ptr, "\r\n")) != NULL){
                     if (*token == '\0'){
                         continue;
                     }
+
+                    // splits them into request line and header
+                    // request line GET /index.html HTTP/1.1
+                    if (is_first_line){
+                        char *method = strsep(&token, " ");
+                        char *url = strsep(&token, " ");
+                        char *version = strsep(&token, " ");
+
+                        // ONLY SUPPORT GET Method
+                        if (strcmp(method, "GET") != 0) {
+                            char *errorMsg = "PLEASE ONLY USER GET";
+                            snprintf(response, sizeof(response),
+                                "HTTP/1.1 405 Method Not Allowed\r\n"
+                                "Content-Type: text/plain\r\n"
+                                "Content-Length: %zu\r\n"
+                                "\r\n"
+                                "%s",
+                                strlen(errorMsg), errorMsg);
+
+                            send(new_socket, response, strlen(response), 0);
+                            close(new_socket);
+                            continue;
+                        }
+
+
+
+                        // it includes /index.html -> ++url skips the /
+                        FILE *fp = fopen(++url, "r");
+                        // if path not found close the connection
+                        if (fp == NULL) {
+                            perror("ERROR opening file");
+                            char *errorMsg = "PATH NOT FOUND";
+                            snprintf(response, sizeof(response),
+                                "HTTP/1.1 404 Method Not Allowed\r\n"
+                                "Content-Type: text/plain\r\n"
+                                "Content-Length: %zu\r\n"
+                                "\r\n"
+                                "%s",
+                                strlen(errorMsg), errorMsg);
+
+                            send(new_socket, response, strlen(response), 0);
+                            close(new_socket);
+                            continue;
+                        }
+
+
+
+                        is_first_line = 0;
+                    }
+
+                    // should i handle the rest? -> probably not
+
                     printf("%s\n",token);
                 }
-                // snprintf(request, sizeof(request), "%s", token);  // ✓ 안전
 
-                // prepare body
-                const char *body = "Hello from C HTTP server!\n";
-                // response 버퍼안에다가 넣는다
-                char response[BUFFER_SIZE];
+
+                // GET
+                // index file buffer
+                FILE *fp = fopen("index.html", "r");
+                if (fp ==NULL){
+                    perror("ERROR opening file");
+                }
+                // read the file into buffer
+                int bytes_read = fread(response, 1, BUFFER_SIZE - 1, fp);
+                response[bytes_read] = '\0';  // Null-terminate it for safety
 
                 snprintf(response, sizeof(response),
                     "HTTP/1.1 200 OK\r\n"
@@ -127,7 +189,7 @@ int main() {
                     "Content-Length: %zu\r\n"
                     "\r\n"
                     "%s",
-                    strlen(body), body);
+                    strlen(response), response);
 
                 send(new_socket, response, strlen(response), 0);
             }
