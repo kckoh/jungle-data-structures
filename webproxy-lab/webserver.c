@@ -1,3 +1,4 @@
+#include <_string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,6 +68,17 @@ int main() {
 
     printf("Server listening on port %d...\n", PORT);
 
+    // HTTP FORMAT\r\n
+    // GET /index.html HTTP/1.1\r\n
+    // Host: www.example.com\r\n
+    // User-Agent: Mozilla/5.0\r\n
+    // Accept: text/html\r\n
+
+    // 요청라인
+    // 헤더
+    // \r\n
+    // body
+
     // 4. Accept a connection
     while (1) {
         new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
@@ -75,33 +87,40 @@ int main() {
             continue;  // 오류 발생 시 서버 전체 종료하지 말고 다음 연결 대기
         }
 
-
-
         // 클라이언트와 통신
         memset(buffer, 0, BUFFER_SIZE);
-        char output[BUFFER_SIZE];
-        memset(output, 0, sizeof(output));
+
+        // char *output[BUFFER_SIZE];
+        // memset(output, 0, sizeof(output));
         // strcpy(output, "RECEIVED: ");
         // strcat(output, buffer);
 
-        // HTTP FORMAT\r\n
-        // GET /index.html HTTP/1.1\r\n
-        // Host: www.example.com\r\n
-        // User-Agent: Mozilla/5.0\r\n
-        // Accept: text/html\r\n
-
         ssize_t valread = recv(new_socket, buffer, BUFFER_SIZE, 0);
 
-        strcpy(output,buffer);
-
+        // strcp(output,buffer);
+        char request[BUFFER_SIZE];
 
             if (valread > 0) {
                 printf("Client says:\n%s\n", buffer);
 
+                // Parse the request
+
+                char *token;
+                char *buffer_ptr = buffer;
+
+                while ((token = strsep(&buffer_ptr, "\r\n")) != NULL){
+                    if (*token == '\0'){
+                        continue;
+                    }
+                    printf("%s\n",token);
+                }
+                // snprintf(request, sizeof(request), "%s", token);  // ✓ 안전
+
                 // prepare body
                 const char *body = "Hello from C HTTP server!\n";
-                char response[BUFFER_SIZE];
                 // response 버퍼안에다가 넣는다
+                char response[BUFFER_SIZE];
+
                 snprintf(response, sizeof(response),
                     "HTTP/1.1 200 OK\r\n"
                     "Content-Type: text/plain\r\n"

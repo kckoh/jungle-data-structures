@@ -10,8 +10,8 @@ LDFLAGS = -lpthread
 
 all: proxy
 
-test: webserver.c
-	gcc webserver.c && ./a.out
+test: webserver2.c
+	gcc webserver2.c && ./a.out
 csapp.o: csapp.c csapp.h
 	$(CC) $(CFLAGS) -c csapp.c
 
