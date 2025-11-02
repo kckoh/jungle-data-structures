@@ -1,9 +1,11 @@
-#include "csapp.h"
+#include <pthread.h>
 #include <_string.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 
@@ -103,6 +105,7 @@ int main() {
         // response 버퍼안에다가 넣는다
         char response[BUFFER_SIZE];
 
+
             if (valread > 0) {
                 printf("Client says:\n%s\n", buffer);
 
@@ -113,6 +116,7 @@ int main() {
 
                 // reads the client request
                 int is_first_line = 1;
+                // go through each line of the request
                 while ((token = strsep(&buffer_ptr, "\r\n")) != NULL){
                     if (*token == '\0'){
                         continue;
@@ -143,25 +147,104 @@ int main() {
 
 
 
-                        // it includes /index.html -> ++url skips the /
-                        FILE *fp = fopen(++url, "r");
-                        // if path not found close the connection
-                        if (fp == NULL) {
-                            perror("ERROR opening file");
-                            char *errorMsg = "PATH NOT FOUND";
+                        // CGI
+                        if (strstr(url, "/cgi-bin/adder")) {
+                            printf("Matched /cgi-bin/adder\n");
+
+                            pid_t pid = fork();
+
+
+                            if (pid < 0) {
+                                    perror("Fork failed");
+                                    exit(1);
+                                }
+                            else if (pid == 0) {
+                                // CHILD PROCESS - Execute CGI script
+
+                                // Set environment variables
+                                char *query = strchr(url,'?');
+                                query++;
+                                printf("query: %s\n", query);
+                                // After parsing the HTTP request:
+                                // 사실 여기도 필요 없을지도..?
+                                setenv("REQUEST_METHOD", "GET", 1);
+                                setenv("QUERY_STRING", query, 1);  // parsed from URL
+                                setenv("SCRIPT_NAME", "/cgi-bin/adder", 1);
+                                setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+                                setenv("REQUEST_URI",url,1);
+                                setenv("SERVER_SOFTWARE", "MyServer/1.0", 1);
+                                setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
+
+
+                                dup2(new_socket, STDOUT_FILENO);
+                                // Execute CGI script
+                                execl("./cgi-bin/adder", "adder", NULL);
+
+                            // If execl returns, it failed
+                                perror("execl failed");
+                                exit(1);
+                            }
+                            else {
+                                // PARENT PROCESS - Wait for child
+
+                                int status;
+                                waitpid(pid, &status, 0);  // Wait for child to finish
+
+                                if (WIFEXITED(status)) {
+                                    printf("Child exited with status %d\n", WEXITSTATUS(status));
+                                }
+
+                            }
+
+                        }
+                        // index.html
+                        else if (strstr (url, "/index.html")){
+                            // GET
+                            // index file buffer
+                            FILE *fp = fopen("index.html", "r");
+                            if (fp ==NULL){
+                                perror("ERROR opening file");
+                            }
+                            // read the file into buffer
+                            int bytes_read = fread(response, 1, BUFFER_SIZE - 1, fp);
+                            response[bytes_read] = '\0';  // Null-terminate it for safety
+
                             snprintf(response, sizeof(response),
-                                "HTTP/1.1 404 Method Not Allowed\r\n"
+                                "HTTP/1.1 200 OK\r\n"
                                 "Content-Type: text/plain\r\n"
                                 "Content-Length: %zu\r\n"
                                 "\r\n"
                                 "%s",
-                                strlen(errorMsg), errorMsg);
+                                strlen(response), response);
 
                             send(new_socket, response, strlen(response), 0);
-                            close(new_socket);
-                            continue;
+                        }
+                         // NOT CGI
+                        else{
+                            // it includes /index.html -> ++url skips the /
+                            FILE *fp = fopen(++url, "r");
+                            // if path not found close the connection
+                            if (fp == NULL) {
+                                perror("ERROR opening file");
+                                char *errorMsg = "PATH NOT FOUND";
+                                snprintf(response, sizeof(response),
+                                    "HTTP/1.1 404 Method Not Allowed\r\n"
+                                    "Content-Type: text/plain\r\n"
+                                    "Content-Length: %zu\r\n"
+                                    "\r\n"
+                                    "%s",
+                                    strlen(errorMsg), errorMsg);
+
+                                send(new_socket, response, strlen(response), 0);
+                                close(new_socket);
+                                continue;
+                            }
                         }
 
+
+
+
+                        // Then execute the CGI script
 
 
                         is_first_line = 0;
@@ -169,29 +252,12 @@ int main() {
 
                     // should i handle the rest? -> probably not
 
+
                     printf("%s\n",token);
                 }
 
 
-                // GET
-                // index file buffer
-                FILE *fp = fopen("index.html", "r");
-                if (fp ==NULL){
-                    perror("ERROR opening file");
-                }
-                // read the file into buffer
-                int bytes_read = fread(response, 1, BUFFER_SIZE - 1, fp);
-                response[bytes_read] = '\0';  // Null-terminate it for safety
 
-                snprintf(response, sizeof(response),
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-Type: text/plain\r\n"
-                    "Content-Length: %zu\r\n"
-                    "\r\n"
-                    "%s",
-                    strlen(response), response);
-
-                send(new_socket, response, strlen(response), 0);
             }
 
         close(new_socket); // 클라이언트와의 연결 종료
