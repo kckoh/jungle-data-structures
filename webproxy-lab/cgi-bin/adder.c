@@ -47,63 +47,80 @@ int main(){
     // CGI
     //
 
-
+    // ?num1=1&num2=2
     char *path = getenv("REQUEST_URI");
+    if (!path) {
+        printf("REQUEST_URI not set\n");
+        return 1;
+    }
+
     // printf("%s",path);
     if (strstr(path, "cgi-bin")) {
-            char *query = strchr(path, '?');  // points to "?1&2"
-            if (!query || !*(query + 1)) {
-                printf("No query found\n");
-                return 1;
-            }
+        char *query = strchr(path, '?');  // points to ?num1=1&num2=2
 
-            // move past '?'
-            query++;
+        if (!query || !*(query + 1)) {
+            printf("No query found\n");
+            return 1;
+        }
 
-            char *amp = strchr(query, '&');
-            if (!amp) {
-                printf("Invalid query format\n");
-                return 1;
-            }
+        char *amp = strchr(query, '&');
+        if (!amp) {
+            printf("Invalid query format\n");
+            return 1;
+        }
 
-            int a = atoi(query);
-            int b = atoi(amp + 1);
-            int result = a + b;
+        char *num_str_1 = strstr(query,"num1=");
+        char *num_str_2 = strstr(query,"num2=");
+        if (num_str_1 == NULL || num_str_2 == NULL) {
+            printf("Missing num1 or num2\n");
+            return 1;
+        }
 
-            char response[64];
-            snprintf(response, sizeof(response), "%d", result);
-            printf("HTTP/1.1 200 OK\r\n"
-                   "Content-Type: text/plain\r\n"
-                   "Content-Length: %zu\r\n"
-                   "\r\n"
-                   "%s",
-                   strlen(response), response);
-
-            // char a = *query;        // '1'
-            // char b = *(amp + 1);    // '2'
-            // int result;
-            // char response[64];
+        num_str_1 +=5;
+        num_str_2 +=5;
+        // move past '?'
+        // query++;
 
 
-            // if (addChars(a, b, &result)) {
-            //     // "HTTP/1.1 200 OK\r\n"
-            //     // "Content-Type: text/plain\r\n"
-            //     // "Content-Length: %zu\r\n"
-            //     // "\r\n"
-            //     // "%s",
-            //     // strlen(response), response);
-            //     snprintf(response, sizeof(response), "%d", result);
-            //     printf("HTTP/1.1 200 OK\r\n"
-            //            "Content-Type: text/plain\r\n"
-            //            "Content-Length: %zu\r\n"
-            //            "\r\n"
-            //            "%s",
-            //            strlen(response), response);
 
-            // } else {
-            //     printf("Content-Type: text/plain\r\n\r\n");
-            //     printf("Invalid digits.\n");
-            // }
+        int a = atoi(num_str_1);
+        int b = atoi(num_str_2);
+        int result = a + b;
+
+        char response[64];
+        snprintf(response, sizeof(response), "%d", result);
+        printf("HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/plain\r\n"
+                "Content-Length: %zu\r\n"
+                "\r\n"
+                "%s",
+                strlen(response), response);
+
+        // char a = *query;        // '1'
+        // char b = *(amp + 1);    // '2'
+        // int result;
+        // char response[64];
+
+
+        // if (addChars(a, b, &result)) {
+        //     // "HTTP/1.1 200 OK\r\n"
+        //     // "Content-Type: text/plain\r\n"
+        //     // "Content-Length: %zu\r\n"
+        //     // "\r\n"
+        //     // "%s",
+        //     // strlen(response), response);
+        //     snprintf(response, sizeof(response), "%d", result);
+        //     printf("HTTP/1.1 200 OK\r\n"
+        //            "Content-Type: text/plain\r\n"
+        //            "Content-Length: %zu\r\n"
+        //            "\r\n"
+        //            "%s",
+        //            strlen(response), response);
+
+        // } else {
+        //     printf("Content-Type: text/plain\r\n\r\n");
+        //     printf("Invalid digits.\n");
+        // }
         }
 
      return 0;

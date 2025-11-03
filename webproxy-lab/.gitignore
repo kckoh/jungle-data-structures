@@ -65,3 +65,5 @@ dkms.conf
 # ignore the
 *.mpg
 *.mp4
+
+.claude

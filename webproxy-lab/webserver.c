@@ -204,7 +204,7 @@ int main() {
                             }
 
                         }
-                        // index.html
+                        // any .html file
                         else if (strstr(url, ".html")){
                             // GET
                             // index file buffer
@@ -349,26 +349,26 @@ int main() {
 
                         }
                          // NOT CGI
-                        else{
-                            // it includes /index.html -> ++url skips the /
-                            FILE *fp = fopen(++url, "r");
-                            // if path not found close the connection
-                            if (fp == NULL) {
-                                perror("ERROR opening file");
-                                char *errorMsg = "PATH NOT FOUND";
-                                snprintf(response, sizeof(response),
-                                    "HTTP/1.1 404 Method Not Allowed\r\n"
-                                    "Content-Type: text/plain\r\n"
-                                    "Content-Length: %zu\r\n"
-                                    "\r\n"
-                                    "%s",
-                                    strlen(errorMsg), errorMsg);
+                        // else{
+                        //     // it includes /index.html -> ++url skips the /
+                        //     FILE *fp = fopen(++url, "r");
+                        //     // if path not found close the connection
+                        //     if (fp == NULL) {
+                        //         perror("ERROR opening file");
+                        //         char *errorMsg = "PATH NOT FOUND";
+                        //         snprintf(response, sizeof(response),
+                        //             "HTTP/1.1 404 Method Not Allowed\r\n"
+                        //             "Content-Type: text/plain\r\n"
+                        //             "Content-Length: %zu\r\n"
+                        //             "\r\n"
+                        //             "%s",
+                        //             strlen(errorMsg), errorMsg);
 
-                                send(new_socket, response, strlen(response), 0);
-                                close(new_socket);
-                                continue;
-                            }
-                        }
+                        //         send(new_socket, response, strlen(response), 0);
+                        //         close(new_socket);
+                        //         continue;
+                        //     }
+                        // }
 
 
 
