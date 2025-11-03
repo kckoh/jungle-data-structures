@@ -205,10 +205,41 @@ int main() {
 
                         }
                         // index.html
-                        else if (strstr(url, "/index.html")){
+                        else if (strstr(url, ".html")){
                             // GET
                             // index file buffer
-                            int fd = open("index.html", O_RDONLY);
+                            // parse the url
+                            // http://localhost:8080/index.html
+                            // parse anything after 8080 ->
+
+                            char *parsed_uri = url;                            // Skip leading "/" to get the filename
+                            if (parsed_uri[0] == '/') {
+                                parsed_uri++;
+                            }
+
+                            if (parsed_uri == NULL) {
+                                    fprintf(stderr, "Invalid URL format\n");
+                                    snprintf(response, sizeof(response),
+                                             "HTTP/1.1 400 Bad Request\r\n"
+                                             "Content-Type: text/html\r\n"
+                                             "Content-Length: 50\r\n"
+                                             "\r\n"
+                                             "<html><body><h1>400 Bad Request</h1></body></html>");
+                                    send(new_socket, response, strlen(response), 0);
+                                    break;  // or return -1, depending on your control flow
+                                }
+
+
+                            printf("parsed uri: %s\n",parsed_uri);
+
+                            // SECURITY: Validate the path
+                            if (strstr(parsed_uri, "..") != NULL) {
+                                // Reject paths with ".." to prevent directory traversal
+                                fprintf(stderr, "Path traversal attempt blocked\n");
+                                return -1;
+                            }
+
+                            int fd = open(parsed_uri, O_RDONLY);
                             if (fd ==-1){
                                 perror("ERROR opening file");
                                 snprintf(response, sizeof(response),
