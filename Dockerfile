@@ -55,26 +55,45 @@
 
 
 # Dockerfile for malloc
-FROM ubuntu:24.04
+# FROM ubuntu:24.04
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    TZ=Asia/Seoul \
-    LANG=ko_KR.UTF-8 \
-    LANGUAGE=ko_KR:ko \
-    LC_ALL=ko_KR.UTF-8
+# ENV DEBIAN_FRONTEND=noninteractive \
+#     TZ=Asia/Seoul \
+#     LANG=ko_KR.UTF-8 \
+#     LANGUAGE=ko_KR:ko \
+#     LC_ALL=ko_KR.UTF-8
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      locales tzdata ca-certificates \
-      build-essential make cmake \
-      gcc gdb lldb gdbserver valgrind \
-      vim curl git wget \
-      net-tools iproute2 telnet sudo && \
-    locale-gen ko_KR.UTF-8 && update-locale LANG=ko_KR.UTF-8 && \
-    rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends \
+#       locales tzdata ca-certificates \
+#       build-essential make cmake \
+#       gcc gdb lldb gdbserver valgrind \
+#       vim curl git wget \
+#       net-tools iproute2 telnet sudo && \
+#     locale-gen ko_KR.UTF-8 && update-locale LANG=ko_KR.UTF-8 && \
+#     rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -s /bin/bash jungle && usermod -aG sudo jungle && \
-    echo "jungle ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/jungle
+# RUN useradd -m -s /bin/bash jungle && usermod -aG sudo jungle && \
+#     echo "jungle ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/jungle
+
+# USER jungle
+# WORKDIR /home/jungle
+
+
+# web proxy
+FROM ubuntu:latest
+
+ENV TZ=Asia/Seoul LANG=ko_KR.UTF-8 LANGUAGE=ko_KR.UTF-8
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    locales tzdata build-essential sudo gdb vim curl git wget \
+    python3 cmake make gcc sudo valgrind telnet net-tools iproute2\
+    && locale-gen ko_KR.UTF-8 && update-locale LANG=ko_KR.UTF-8
+
+RUN useradd -m -s /bin/bash jungle && usermod -aG sudo jungle
+RUN echo "jungle ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/jungle
+# 암호 설정
+# RUN echo 'jungle:jungle' | chpasswd
 
 USER jungle
 WORKDIR /home/jungle
