@@ -5,6 +5,9 @@
 #include <stdio.h> //printf
 #include <stdlib.h> // free, getenv
 #include <ctype.h> // isdigit
+#include <sys/fcntl.h> //O_RDONLY
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 
 int addChars(char c1, char c2, int *result) {
@@ -48,35 +51,51 @@ int main(){
     //
 
 
-    char *path = "cgi-bin/adder?1&2";
+    // char *path = "cgi-bin/adder?1&2";
 
-    if (strstr(path, "cgi-bin")) {
-            char *query = strchr(path, '?');  // points to "?1&2"
-            if (!query || !*(query + 1)) {
-                printf("No query found\n");
-                return 1;
-            }
+    // if (strstr(path, "cgi-bin")) {
+    //         char *query = strchr(path, '?');  // points to "?1&2"
+    //         if (!query || !*(query + 1)) {
+    //             printf("No query found\n");
+    //             return 1;
+    //         }
 
-            // move past '?'
-            query++;
+    //         // move past '?'
+    //         query++;
 
-            char *amp = strchr(query, '&');
-            if (!amp) {
-                printf("Invalid query format\n");
-                return 1;
-            }
+    //         char *amp = strchr(query, '&');
+    //         if (!amp) {
+    //             printf("Invalid query format\n");
+    //             return 1;
+    //         }
 
-            char a = *query;        // '1'
-            char b = *(amp + 1);    // '2'
-            int result;
+    //         char a = *query;        // '1'
+    //         char b = *(amp + 1);    // '2'
+    //         int result;
 
-            printf("a=%c, b=%c\n", a, b);
+    //         printf("a=%c, b=%c\n", a, b);
 
-            if (addChars(a, b, &result))
-                printf("Total = %d\n", result);
-            else
-                printf("Invalid digits.\n");
-        }
+    //         if (addChars(a, b, &result))
+    //             printf("Total = %d\n", result);
+    //         else
+    //             printf("Invalid digits.\n");
+    //     }
+    int fd = open("tracking.mpg", O_RDONLY);
+    struct stat sb;
+
+    if (fstat(fd, &sb) == -1) {
+        perror("ERROR getting file size");
+        return -1;
+    }
+
+    off_t filesize = sb.st_size;
+
+    //   mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
+    // prot -> read/write protect etc
+    // flags -> share or private etc
+    char *file_memory =mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
+
+
 
      return 0;
 }

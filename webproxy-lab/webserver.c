@@ -1,13 +1,19 @@
 #include <pthread.h>
 #include <_string.h>
 #include <pthread.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/fcntl.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h> // O_RDONLY
+
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
@@ -104,7 +110,8 @@ int main() {
         char request[BUFFER_SIZE];
         // response 버퍼안에다가 넣는다
         char response[BUFFER_SIZE];
-
+        memset(response, 0, BUFFER_SIZE);
+        memset(request, 0, BUFFER_SIZE);
 
             if (valread > 0) {
                 printf("Client says:\n%s\n", buffer);
@@ -198,26 +205,117 @@ int main() {
 
                         }
                         // index.html
-                        else if (strstr (url, "/index.html")){
+                        else if (strstr(url, "/index.html")){
                             // GET
                             // index file buffer
-                            FILE *fp = fopen("index.html", "r");
-                            if (fp ==NULL){
+                            int fd = open("index.html", O_RDONLY);
+                            if (fd ==-1){
                                 perror("ERROR opening file");
+                                snprintf(response, sizeof(response),
+                                         "HTTP/1.1 404 Not Found\r\n"
+                                         "Content-Type: text/html\r\n"
+                                         "Content-Length: 48\r\n"
+                                         "\r\n"
+                                         "<html><body><h1>404 Not Found</h1></body></html>");
+                                send(new_socket, response, strlen(response), 0);
                             }
                             // read the file into buffer
-                            int bytes_read = fread(response, 1, BUFFER_SIZE - 1, fp);
-                            response[bytes_read] = '\0';  // Null-terminate it for safety
+                            //
+                            // int bytes_read = fread(response, 1, BUFFER_SIZE - 1, fp);
+                            // // void * mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
 
+                            // response[bytes_read] = '\0';  // Null-terminate it for safety
+
+                            // snprintf(response, sizeof(response),
+                            //     "HTTP/1.1 200 OK\r\n"
+                            //     "Content-Type: text/plain\r\n"
+                            //     "Content-Length: %zu\r\n"
+                            //     "\r\n"
+                            //     "%s",
+                            //     strlen(response), response);
+
+                            // send(new_socket, response, strlen(response), 0);
+
+                            // Get file size
+                             struct stat sb;
+                             if (fstat(fd, &sb) == -1) {
+                                 perror("ERROR getting file size");
+                                 close(fd);
+                                 break;
+                             }
+                             off_t filesize = sb.st_size;
+
+                             // Map the file into memory
+                             char *file_content = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
+                             if (file_content == MAP_FAILED) {
+                                 perror("ERROR mapping file");
+                                 close(fd);
+                                 break;
+                             }
+                             close(fd);
+
+                             char header[BUFFER_SIZE];
+                            snprintf(header, sizeof(header),
+                                "HTTP/1.1 200 OK\r\n"
+                                "Content-Type: text/html\r\n"
+                                "Content-Length: %ld\r\n"
+                                "\r\n",
+                                (long) filesize);
+
+                            // send the header firtst
+                            send(new_socket, header, strlen(header), 0);
+
+                            // send the content
+                            send(new_socket, file_content, filesize, 0);
+
+                            munmap(file_content, filesize);
+
+                        }
+
+                        else if (strstr(url, "/api/videos/sample.mp4")){
+                            int video_fd = open("sample.mp4", O_RDONLY);
+                            struct stat file_stat;
+
+                            if(fstat(video_fd, &file_stat) == -1){
+                                perror("ERROR OPPENING the tracking.mpg: ");
+                                close(video_fd);
+                                break;
+                            }
+
+                            char *map = mmap(NULL, file_stat.st_size, PROT_READ, MAP_PRIVATE, video_fd, 0);
+                                 // send(int socket, const void *buffer, size_t length, int flags);
+
+
+                            if (map == MAP_FAILED) {
+                                perror("ERROR mapping file");
+                                close(video_fd);
+                                break;
+                            }
+
+                            // send headers first
+                            // snprintf(char * restrict str, size_t size, const char * restrict format, ...);
+                            // accept-ranges -> allows you to move between plays
+                            // if the format is not supported, it forwards to download
                             snprintf(response, sizeof(response),
                                 "HTTP/1.1 200 OK\r\n"
-                                "Content-Type: text/plain\r\n"
-                                "Content-Length: %zu\r\n"
+                                "Content-Type: video/mp4\r\n"
+                                "Content-Length: %ld\r\n"
+                                "Content-Disposition: inline\r\n"
+                                "Accept-Ranges: bytes\r\n"
                                 "\r\n"
-                                "%s",
-                                strlen(response), response);
+                                ,(long) file_stat.st_size);
 
-                            send(new_socket, response, strlen(response), 0);
+                            send(new_socket,response, strlen(response),0);
+
+
+                            // send the video file
+                            send(new_socket, map, file_stat.st_size, 0);
+
+
+                            // close them
+                            munmap(map, file_stat.st_size);
+                            close(video_fd);
+
                         }
                          // NOT CGI
                         else{
