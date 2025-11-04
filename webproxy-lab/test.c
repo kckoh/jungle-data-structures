@@ -80,20 +80,20 @@ int main(){
     //         else
     //             printf("Invalid digits.\n");
     //     }
-    int fd = open("tracking.mpg", O_RDONLY);
-    struct stat sb;
+    // int fd = open("tracking.mpg", O_RDONLY);
+    // struct stat sb;
 
-    if (fstat(fd, &sb) == -1) {
-        perror("ERROR getting file size");
-        return -1;
-    }
+    // if (fstat(fd, &sb) == -1) {
+    //     perror("ERROR getting file size");
+    //     return -1;
+    // }
 
-    off_t filesize = sb.st_size;
+    // off_t filesize = sb.st_size;
 
-    //   mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
-    // prot -> read/write protect etc
-    // flags -> share or private etc
-    char *file_memory =mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
+    // //   mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
+    // // prot -> read/write protect etc
+    // // flags -> share or private etc
+    // char *file_memory =mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
 
 
 

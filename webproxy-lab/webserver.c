@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <_string.h>
+// #include <_string.h>
 #include <pthread.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -18,7 +18,7 @@
 #define PORT 8080
 #define BUFFER_SIZE 1024
 
-int main() {
+int main(int argc, char **argv) {
 // socket -> sockaddr_in -> bind -> listen -> accept ->read/send -> close
 
     int server_fd, new_socket;
@@ -61,7 +61,14 @@ int main() {
     // 2. Bind socket to IP/Port
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;  // any local IP
-    address.sin_port = htons(PORT);        // convert to network byte order - PORT = 8080
+
+    if (argc != 2) {
+	fprintf(stderr, "usage: %s <port>\n", argv[0]);
+	exit(1);
+    }
+
+
+    address.sin_port = htons(atoi(argv[1]));        // convert to network byte order - PORT = 8080
     //   bind(int socket, const struct sockaddr *address, socklen_t address_len);
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("bind failed");
@@ -332,7 +339,7 @@ int main() {
                                 "Content-Type: video/mp4\r\n"
                                 "Content-Length: %ld\r\n"
                                 "Content-Disposition: inline\r\n"
-                                "Accept-Ranges: bytes\r\n"
+                                // "Accept-Ranges: bytes\r\n"
                                 "\r\n"
                                 ,(long) file_stat.st_size);
 
@@ -349,26 +356,70 @@ int main() {
 
                         }
                          // NOT CGI
-                        // else{
-                        //     // it includes /index.html -> ++url skips the /
-                        //     FILE *fp = fopen(++url, "r");
-                        //     // if path not found close the connection
-                        //     if (fp == NULL) {
-                        //         perror("ERROR opening file");
-                        //         char *errorMsg = "PATH NOT FOUND";
-                        //         snprintf(response, sizeof(response),
-                        //             "HTTP/1.1 404 Method Not Allowed\r\n"
-                        //             "Content-Type: text/plain\r\n"
-                        //             "Content-Length: %zu\r\n"
-                        //             "\r\n"
-                        //             "%s",
-                        //             strlen(errorMsg), errorMsg);
+                        else{
+                            // it includes /index.html -> ++url skips the /
+                            // if path not found close the connection
+                            url++;
+                            int some_file = open(url, O_RDONLY);
+                            printf("%s\n",url);
+                            if (some_file == -1) {
+                                perror("ERROR opening file");
+                                char *errorMsg = "PATH NOT FOUND";
+                                snprintf(response, sizeof(response),
+                                    "HTTP/1.1 404 Method Not Allowed\r\n"
+                                    "Content-Type: text/plain\r\n"
+                                    "Content-Length: %zu\r\n"
+                                    "\r\n"
+                                    "%s",
+                                    strlen(errorMsg), errorMsg);
 
-                        //         send(new_socket, response, strlen(response), 0);
-                        //         close(new_socket);
-                        //         continue;
-                        //     }
-                        // }
+                                send(new_socket, response, strlen(response), 0);
+                                close(new_socket);
+                                continue;
+                            }
+
+                            struct stat file_stat;
+
+                            if(fstat(some_file, &file_stat) == -1){
+                                perror("ERROR OPPENING the tracking.mpg: ");
+                                close(some_file);
+                                break;
+                            }
+
+                            char *map = mmap(NULL, file_stat.st_size, PROT_READ, MAP_PRIVATE, some_file, 0);
+                                 // send(int socket, const void *buffer, size_t length, int flags);
+
+
+                            if (map == MAP_FAILED) {
+                                perror("ERROR mapping file");
+                                close(some_file);
+                                break;
+                            }
+
+                            // send headers first
+                            // snprintf(char * restrict str, size_t size, const char * restrict format, ...);
+                            // accept-ranges -> allows you to move between plays
+                            // if the format is not supported, it forwards to download
+                            snprintf(response, sizeof(response),
+                                "HTTP/1.1 200 OK\r\n"
+                                "Content-Type: image/gif\r\n"
+                                "Content-Length: %ld\r\n"
+                                // "Accept-Ranges: bytes\r\n"
+                                "\r\n"
+                                ,(long) file_stat.st_size);
+
+                            send(new_socket,response, strlen(response),0);
+
+
+                            // send the video file
+                            send(new_socket, map, file_stat.st_size, 0);
+
+
+                            // close them
+                            munmap(map, file_stat.st_size);
+                            close(some_file);
+
+                        }
 
 
 

@@ -14,7 +14,10 @@ test: test.c
 	gcc test.c && ./a.out
 
 web: webserver.c
-	gcc webserver.c && ./a.out
+	gcc webserver.c && ./a.out 8080
+
+run: proxy
+	./proxy 8000
 
 csapp.o: csapp.c csapp.h
 	$(CC) $(CFLAGS) -c csapp.c
