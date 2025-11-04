@@ -1,9 +1,44 @@
+#include <cstring>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/socket.h>
 #include "csapp.h"
 
+#define MAX_CACHE_SIZE 1049000   /* 1 MiB */
+#define MAX_OBJECT_SIZE 102400   /* 100 KiB */
+
+// STEPS to implement
+// 1. initialize the cache_t -> DONE
+// 2. check if the total_size exceeds the max_cache_size
+// 4. check if it's cached by iterating the head
+// 5. not found -> check if the total_size exceeds the max_cache_size
+// 6. if it exceeds, keep removing the tail until the space is available
+// 7 otherwise update the head pointer
+// 6. found -> just return the data
+
+
+typedef struct cache_block {
+    char url[MAXLINE];      // key (ex: "http://www.cmu.edu/index.html")
+    char *data;             // malloc된 실제 object 데이터
+    int size;               // object 크기
+    struct cache_block *prev;
+    struct cache_block *next;
+} cache_block_t;
+
+typedef struct {
+    cache_block_t *head;    // MRU (가장 최근 사용)
+    cache_block_t *tail;    // LRU (가장 오래된)
+    int total_size;
+    pthread_rwlock_t lock;  // 읽기/쓰기 동기화
+} cache_t;
+
+static cache_t cache;
+
+// 전방 선언
+void serve_from_cache(int fd, cache_block_t *cache_blk);
+void move_to_front(cache_t *cache_table, cache_block_t *cache_blk);
 static const char *user_agent_hdr =
     "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 "
     "Firefox/10.0.3\r\n";
@@ -15,6 +50,8 @@ typedef struct {
 } thread_args;
 
 void *handle_client(void *vargp);
+
+void cache_init(cache_t *cache);
 
 int main(int argc, char **argv) {
   if (argc != 2){
@@ -31,7 +68,10 @@ int main(int argc, char **argv) {
 
   client_listenfd = Open_listenfd(argv[1]);
   pthread_t threads;
-  int i = 0;
+
+  //1.  initialize the cache
+  cache_init(&cache);
+
   while (1) {
     clientlen = sizeof(clientaddr);
 
@@ -47,8 +87,6 @@ int main(int argc, char **argv) {
 
     pthread_create(&threads, NULL, handle_client, t);
     pthread_detach(threads);  // Now we can detach
-    i++;
-
 
   }
 
@@ -112,6 +150,9 @@ void *handle_client(void *vargp){
     fprintf(stderr, "[PARSED] host=%s port=%s path=%s\n", host, port, path);
     fflush(stderr);
 
+
+
+
     // 3. READ ALL CLIENT HEADERS
     fprintf(stderr, "[HEADERS] Reading headers...\n");
     fflush(stderr);
@@ -144,6 +185,48 @@ void *handle_client(void *vargp){
     fprintf(stderr, "[CONNECTING] to host=%s port=%s path=%s\n", host, port, path);
     fflush(stderr);
 
+
+    char full_url[MAXLINE];
+    snprintf(full_url, MAXLINE, "%s:%s%s", host, port, path);
+
+    // iterate to find the cache
+    //2. iterate the linked list
+    // typedef struct cache_block {
+    //     char url[MAXLINE];      // key (ex: "http://www.cmu.edu/index.html")
+    //     char *data;             // malloc된 실제 object 데이터
+    //     int size;               // object 크기
+    //     struct cache_block *prev;
+    //     struct cache_block *next;
+    // } cache_block_t;
+
+    // typedef struct {
+    //     cache_block_t *head;    // MRU (가장 최근 사용)
+    //     cache_block_t *tail;    // LRU (가장 오래된)
+    //     int total_size;
+    //     pthread_rwlock_t lock;  // 읽기/쓰기 동기화
+    // } cache_t;
+    cache_block_t *temp = cache.head;
+    while (temp != NULL){
+        if (strcmp(full_url, temp->url) == 0){
+            // Cache HIT!
+            move_to_front(&cache, temp);
+
+            // Serve the entire cached HTTP response
+            serve_from_cache(client_connfd, temp);
+
+            Close(client_connfd);
+            free(args);
+            return NULL;
+        }
+        temp = temp->next;
+    }
+
+
+    // NOT FOUND
+    // store the data
+    // check if the total_size exceeds the max_cache_size
+    // 6. if it exceeds, keep removing the tail until the space is available
+    // 7 otherwise update the head pointer
     // 4. CONNECT TO ORIGIN SERVER
     server_connfd = Open_clientfd(host, port);
     if (server_connfd < 0) {
@@ -172,15 +255,38 @@ void *handle_client(void *vargp){
     fflush(stderr);
 
     // 6. FORWARD RESPONSE
+    char response_buf[MAX_OBJECT_SIZE];  // Buffer to accumulate entire response
+
     rio_t rio_server;
     Rio_readinitb(&rio_server, server_connfd);
 
     int n;
     int total_bytes = 0;
     while ((n = Rio_readnb(&rio_server, buf, MAXLINE)) > 0) {
+        // Forward to client
         Rio_writen(client_connfd, buf, n);
+
+        // Accumulate for caching (if small enough)
+        if (total_bytes + n <= MAX_OBJECT_SIZE) {
+            memcpy(response_buf + total_bytes, buf, n);
+        }
+
         total_bytes += n;
     }
+
+    // Now cache it if it fits
+    if (total_bytes <= MAX_OBJECT_SIZE) {
+        //TODO: finish these parts
+        // first finish these
+        // create a cache block -> make sure to use the full_url
+        // also LRU Eviction
+        // add it to the cache table
+        //
+        // thread safety
+        //
+        //
+    }
+
 
     fprintf(stderr, "[COMPLETE] Forwarded %d bytes\n\n", total_bytes);
     fflush(stderr);
@@ -193,4 +299,56 @@ void *handle_client(void *vargp){
 
 
 
+}
+
+
+void cache_init(cache_t *cache) {
+    cache->head = NULL;
+    cache->tail = NULL;
+    cache->total_size = 0;
+    pthread_rwlock_init(&cache->lock, NULL);  // if you use threading
+}
+
+
+
+
+void serve_from_cache(int fd, cache_block_t *cache_blk)
+{
+    // Just write the entire cached response (status line + headers + body)
+    Rio_writen(fd, cache_blk->data, cache_blk->size);
+}
+
+
+void move_to_front(cache_t *cache_table, cache_block_t *cache_blk){
+    // Already at front? Do nothing
+    if (cache_table->head == cache_blk){
+        return;
+    }
+
+    // REMOVE from current position
+    if (cache_blk->prev != NULL){
+        cache_blk->prev->next = cache_blk->next;
+    }
+
+    if (cache_blk->next != NULL){
+        cache_blk->next->prev = cache_blk->prev;
+    } else {
+        // Was the tail - update tail pointer
+        cache_table->tail = cache_blk->prev;
+    }
+
+    // MOVE to front
+    cache_blk->prev = NULL;
+    cache_blk->next = cache_table->head;
+
+    if (cache_table->head != NULL){
+        cache_table->head->prev = cache_blk;
+    }
+
+    cache_table->head = cache_blk;
+
+    // Edge case: if list was empty
+    if (cache_table->tail == NULL){
+        cache_table->tail = cache_blk;
+    }
 }
