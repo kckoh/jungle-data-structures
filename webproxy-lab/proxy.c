@@ -1,7 +1,7 @@
-#include <cstring>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include "csapp.h"
@@ -23,6 +23,7 @@ typedef struct cache_block {
     char url[MAXLINE];      // key (ex: "http://www.cmu.edu/index.html")
     char *data;             // malloc된 실제 object 데이터
     int size;               // object 크기
+    int reference_bit;      // LRU approximation: clock
     struct cache_block *prev;
     struct cache_block *next;
 } cache_block_t;
@@ -191,25 +192,12 @@ void *handle_client(void *vargp){
 
     // iterate to find the cache
     //2. iterate the linked list
-    // typedef struct cache_block {
-    //     char url[MAXLINE];      // key (ex: "http://www.cmu.edu/index.html")
-    //     char *data;             // malloc된 실제 object 데이터
-    //     int size;               // object 크기
-    //     struct cache_block *prev;
-    //     struct cache_block *next;
-    // } cache_block_t;
 
-    // typedef struct {
-    //     cache_block_t *head;    // MRU (가장 최근 사용)
-    //     cache_block_t *tail;    // LRU (가장 오래된)
-    //     int total_size;
-    //     pthread_rwlock_t lock;  // 읽기/쓰기 동기화
-    // } cache_t;
     cache_block_t *temp = cache.head;
     while (temp != NULL){
         if (strcmp(full_url, temp->url) == 0){
             // Cache HIT!
-            move_to_front(&cache, temp);
+            temp->reference_bit = 1;
 
             // Serve the entire cached HTTP response
             serve_from_cache(client_connfd, temp);
@@ -260,6 +248,8 @@ void *handle_client(void *vargp){
     rio_t rio_server;
     Rio_readinitb(&rio_server, server_connfd);
 
+
+    // copy all headers + data
     int n;
     int total_bytes = 0;
     while ((n = Rio_readnb(&rio_server, buf, MAXLINE)) > 0) {
@@ -274,17 +264,97 @@ void *handle_client(void *vargp){
         total_bytes += n;
     }
 
+
+    // typedef struct cache_block {
+    //     char url[MAXLINE];      // key (ex: "http://www.cmu.edu/index.html")
+    //     char *data;             // malloc된 실제 object 데이터
+    //     int size;               // object 크기
+    //     struct cache_block *prev;
+    //     struct cache_block *next;
+    // } cache_block_t;
+
+    // typedef struct {
+    //     cache_block_t *head;    // MRU (가장 최근 사용)
+    //     cache_block_t *tail;    // LRU (가장 오래된)
+    //     int total_size;
+    //     pthread_rwlock_t lock;  // 읽기/쓰기 동기화
+    // } cache_t;
+
     // Now cache it if it fits
+    // LRU Approximation with Clock
     if (total_bytes <= MAX_OBJECT_SIZE) {
-        //TODO: finish these parts
-        // first finish these
+
+
+
+        // LRU eviction
+        while (cache.total_size + total_bytes > MAX_CACHE_SIZE){
+            if (cache.tail == NULL) break;
+            // General idea
+            // STEPS
+            // save the tail and iterate from the tail
+            cache_block_t *tail = cache.tail;
+            // if the reference bit = 1 -> second chance
+            // from the tail, set all the reference bit to 0
+            if (tail->reference_bit == 1) {
+                      tail->reference_bit = 0;  // ← 한 번만!
+
+                      // tail에서 제거
+                      cache.tail = tail->prev;
+                      if (cache.tail) {
+                          cache.tail->next = NULL;
+                      }
+
+                      // head로 이동
+                      tail->prev = NULL;  // ← 추가!
+                      tail->next = cache.head;
+                      if (cache.head) {
+                          cache.head->prev = tail;
+                      }
+                      cache.head = tail;
+                      if (cache.tail == NULL) {  // ← 추가!
+                          cache.tail = tail;
+                      }
+
+                      continue;
+                  }
+            //
+            // if reference bit = 0, remove
+            cache.tail = tail->prev;
+            //
+            if( cache.tail){
+               cache.tail ->next = NULL;
+            }
+            else{
+                cache.head = NULL;
+            }
+            cache.total_size -=tail->size;
+
+            free(tail->data);
+            free(tail);
+
+        }
+
+
         // create a cache block -> make sure to use the full_url
-        // also LRU Eviction
-        // add it to the cache table
-        //
-        // thread safety
-        //
-        //
+        cache_block_t *t =malloc(sizeof(cache_block_t));
+        strcpy(t->url, full_url);
+        t->data = malloc(total_bytes);
+        memcpy(t->data, response_buf, total_bytes);
+        t->size = total_bytes;
+        t->reference_bit = 1;
+
+
+        // cache update
+        t->prev = NULL;
+        t->next = cache.head;
+        if (cache.head != NULL) {  // ← NULL 체크!
+            cache.head->prev = t;
+        } else {
+            cache.tail = t;  // ← 첫 항목이면 tail도!
+        }
+        cache.head = t;
+
+        cache.total_size += total_bytes;
     }
 
 
